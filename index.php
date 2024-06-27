@@ -2,16 +2,29 @@
 include 'db.php';
 
 // Pagination settings
-$per_page_record = 5;
+$per_page_record = 3;
 $page = isset($_GET['page']) ? $_GET['page'] : 1;
 $start_from = ($page - 1) * $per_page_record;
 
+// Initialize search term
+$search_term = isset($_GET['search']) ? $_GET['search'] : '';
 
+// If search button is clicked, store search term in session
+if (isset($_GET['search_btn'])) {
+    session_start();
+    $_SESSION['search_term'] = $search_term;
+}
+
+// Retrieve search term from session if available
+if (isset($_SESSION['search_term'])) {
+    $search_term = $_SESSION['search_term'];
+}
+
+// Construct the SQL query
 $query = "
-
 SELECT 
     p.*, 
-    GROUP_CONCAT( g.name_ SEPARATOR ',') as galleries,
+    GROUP_CONCAT(g.name_ SEPARATOR ',') as galleries,
     GROUP_CONCAT(DISTINCT c.name_ SEPARATOR ', ') as categories,
     GROUP_CONCAT(DISTINCT t.name_ SEPARATOR ', ') as tags
 FROM 
@@ -28,6 +41,8 @@ LEFT JOIN
     product_property pt ON p.id = pt.product_id AND pt.property_id IN (SELECT id FROM property WHERE type_ = 'tag')
 LEFT JOIN 
     property t ON pt.property_id = t.id
+WHERE 
+    p.title LIKE '%$search_term%'
 GROUP BY 
     p.id
 LIMIT 
@@ -52,64 +67,66 @@ $rs_result = $conn->query($query);
 <body>
     <h1>PHP1</h1>
     <header>
+        <form action="" method="get">
         <div class="ui secondary menu">
             <a href="add_product.php" class="ui button openModal">Add product</a>
             <a href="add_property.php" class="ui button">Add property</a>
             <a class="ui button">Sync from VillaTheme</a>
             <div class="right menu">
-                <form action="" method="post">
                     <div class="item">
                         <div class="ui icon input">
-                            <input name="search" class="search_input" type="text" placeholder="Search product...">
+                            <input name="search" class="search_input" type="text" placeholder="Search product..." value="<?php echo htmlspecialchars($search_term); ?>">
                             <button name="search_btn" class="search_btn">
-                                <i class="search link icon"></i>
+                                Search
                             </button>
                         </div>
                     </div>
-                </form>
             </div>
         </div>
-        <form action="" method="GET">
             <div class="filter_box">
                 <div>
                     <select name="date_filter" class="ui dropdown">
-                        <option value="date">Date</option>
-                        <option value="product_name">Product name</option>
-                        <option value="price">Price</option>
+                        <option value="date" <?php if (isset($_GET['date_filter']) && $_GET['date_filter'] == 'date') echo 'selected'; ?>>Date</option>
+                        <option value="product_name" <?php if (isset($_GET['date_filter']) && $_GET['date_filter'] == 'product_name') echo 'selected'; ?>>Product name</option>
+                        <option value="price" <?php if (isset($_GET['date_filter']) && $_GET['date_filter'] == 'price') echo 'selected'; ?>>Price</option>
                     </select>
                 </div>
                 <div>
-                    <select name="sort_alphabet" class="asc ui dropdown">
-                        <option value="0">ASC</option>
-                        <option value="1">DESC</option>
-
+                    <select name="sort_order" class="asc ui dropdown">
+                        <option value="ASC" <?php if (isset($_GET['sort_order']) && $_GET['sort_order'] == 'ASC') echo 'selected'; ?>>ASC</option>
+                        <option value="DESC" <?php if (isset($_GET['sort_order']) && $_GET['sort_order'] == 'DESC') echo 'selected'; ?>>DESC</option>
                     </select>
                 </div>
                 <div>
                     <select name="cat_filter" class="cate ui dropdown">
-                        <option value="">Category</option>
+                        <option value="" <?php if (!isset($_GET['cat_filter'])) echo 'selected'; ?>>Category</option>
+                        <!-- Các tùy chọn danh mục -->
                     </select>
                 </div>
                 <div>
                     <select name="tag_filter" class="tag ui dropdown">
-                        <option value="">Select tag</option>
+                        <option value="" <?php if (!isset($_GET['tag_filter'])) echo 'selected'; ?>>Select tag</option>
+                        <!-- Các tùy chọn tag -->
                     </select>
                 </div>
                 <div class="ui input">
-                    <input type="date">
+                    <input type="date" name="start_date" value="<?php echo isset($_GET['start_date']) ? htmlspecialchars($_GET['start_date']) : ''; ?>">
                 </div>
                 <div class="ui input">
-                    <input type="date">
+                    <input type="date" name="end_date" value="<?php echo isset($_GET['end_date']) ? htmlspecialchars($_GET['end_date']) : ''; ?>">
                 </div>
                 <div class="ui input">
-                    <input type="text" name="price_start" placeholder="price from">
+                    <input type="text" name="price_start" placeholder="price from" value="<?php echo isset($_GET['price_start']) ? htmlspecialchars($_GET['price_start']) : ''; ?>">
                 </div>
                 <div class="ui input">
-                    <input type="text" name="price_end" placeholder="price to">
+                    <input type="text" name="price_end" placeholder="price to" value="<?php echo isset($_GET['price_end']) ? htmlspecialchars($_GET['price_end']) : ''; ?>">
                 </div>
-                <button type="submit" name="e" class="filter ui button">Filter</button>
+
+                <button  name="search_btn" class="filter ui button">Filter</button>
             </div>
         </form>
+
+
     </header>
 
     <section class="table_box">
@@ -146,8 +163,7 @@ $rs_result = $conn->query($query);
                         <td><?php echo $price ?></td>
                         <td><img src="./uploads/<?php echo $featured_image ?>" alt="" width="30px"></td>
                         <td>
-                            <?php
-                             foreach ($galleries as $gallery_image) : ?>
+                            <?php foreach ($galleries as $gallery_image) : ?>
                                 <img src="./uploads/<?php echo $gallery_image ?>" alt="" width="30px">
                             <?php endforeach; ?>
                         </td>
@@ -155,12 +171,9 @@ $rs_result = $conn->query($query);
                         <td><?php echo $tags ?></td>
                         <td data-label="Job">
                             <a href="edit.php?editid=<?php echo $row['id']; ?>" class="btn_edit openModal_edit">
-                                <!-- <i class="edit icon"></i> -->
                                 Edit
                             </a>
-                            
                             <a href="delete.php?deleteid=<?php echo $row['id']; ?>" class="btn_delete">
-                                <!-- <i class="trash icon"></i> -->
                                 Delete
                             </a>
                         </td>
@@ -168,14 +181,14 @@ $rs_result = $conn->query($query);
                 <?php
                 }
                 ?>
-               
+
             </tbody>
         </table>
     </section>
     <div class="box_pagination">
         <div aria-label="Pagination Navigation" role="navigation" class="ui pagination menu">
             <?php
-            $query = "SELECT COUNT(*) FROM products";
+            $query = "SELECT COUNT(*) FROM products WHERE title LIKE '%$search_term%'";
             $rs_result = $conn->query($query);
             $row = mysqli_fetch_row($rs_result);
             $total_records = $row[0];
@@ -185,7 +198,7 @@ $rs_result = $conn->query($query);
 
             if ($page >= 2) {
             ?>
-                <a href="index.php?page=<?php echo $page - 1; ?>" aria-current="false" aria-disabled="false" tabindex="0" value="1" aria-label="Previous item" type="prevItem" class="item">
+                <a href="index.php?page=<?php echo $page - 1; ?>&search=<?php echo htmlspecialchars($search_term); ?>" class="item">
                     <i class="arrow left icon"></i>
                 </a>
                 <?php
@@ -193,18 +206,17 @@ $rs_result = $conn->query($query);
             for ($i = 1; $i <= $total_pages; $i++) {
                 if ($i == $page) {
                 ?>
-                    <a href="index.php?page=<?php echo $i ?>" aria-current="true" aria-disabled="false" tabindex="0" value="1" type="pageItem" class="active item"><?php echo $i; ?></a>
+                    <a href="index.php?page=<?php echo $i ?>&search=<?php echo htmlspecialchars($search_term); ?>" class="active item"><?php echo $i; ?></a>
                 <?php
                 } else {
                 ?>
-                    <a href="index.php?page=<?php echo $i ?>" aria-current="true" aria-disabled="false" tabindex="0" value="1" type="pageItem" class="item"><?php echo $i; ?></a>
+                    <a href="index.php?page=<?php echo $i ?>&search=<?php echo htmlspecialchars($search_term); ?>" class="item"><?php echo $i; ?></a>
                 <?php
                 }
             }
-            echo $pagLink;
             if ($page < $total_pages) {
                 ?>
-                <a href="index.php?page=<?php echo $page + 1 ?>" aria-current="false" aria-disabled="false" tabindex="0" aria-label="Next item" type="nextItem" class="item">
+                <a href="index.php?page=<?php echo $page + 1; ?>&search=<?php echo htmlspecialchars($search_term); ?>" class="item">
                     <i class="arrow right icon"></i>
                 </a>
             <?php
