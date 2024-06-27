@@ -6,10 +6,12 @@ $per_page_record = 5;
 $page = isset($_GET['page']) ? $_GET['page'] : 1;
 $start_from = ($page - 1) * $per_page_record;
 
+
 $query = "
+
 SELECT 
     p.*, 
-    GROUP_CONCAT(DISTINCT g.name_ SEPARATOR ',') as galleries,
+    GROUP_CONCAT( g.name_ SEPARATOR ',') as galleries,
     GROUP_CONCAT(DISTINCT c.name_ SEPARATOR ', ') as categories,
     GROUP_CONCAT(DISTINCT t.name_ SEPARATOR ', ') as tags
 FROM 
@@ -144,7 +146,8 @@ $rs_result = $conn->query($query);
                         <td><?php echo $price ?></td>
                         <td><img src="./uploads/<?php echo $featured_image ?>" alt="" width="30px"></td>
                         <td>
-                            <?php foreach ($galleries as $gallery_image) : ?>
+                            <?php
+                             foreach ($galleries as $gallery_image) : ?>
                                 <img src="./uploads/<?php echo $gallery_image ?>" alt="" width="30px">
                             <?php endforeach; ?>
                         </td>
@@ -153,11 +156,11 @@ $rs_result = $conn->query($query);
                         <td data-label="Job">
                             <a href="edit.php?editid=<?php echo $row['id']; ?>" class="btn_edit openModal_edit">
                                 <!-- <i class="edit icon"></i> -->
-                                 Edit
+                                Edit
                             </a>
                             <a href="delete.php?deleteid=<?php echo $row['id']; ?>" class="btn_delete">
                                 <!-- <i class="trash icon"></i> -->
-                                 Delete
+                                Delete
                             </a>
                         </td>
                     </tr>
