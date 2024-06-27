@@ -2,12 +2,9 @@
 // Include the database configuration file 
 include_once 'db.php';
 
-
-
 if (isset($_POST['add_property'])) {
     $fileNames = array_filter($_FILES['gallery']['name']);
     $categories = $tags = $messempty = "";
-
 
     // File upload configuration 
     $targetDir = "uploads/";
@@ -43,11 +40,17 @@ if (isset($_POST['add_property'])) {
         if (!empty($insertValuesSQL)) {
             $insertValuesSQL = trim($insertValuesSQL, ',');
             // Insert image file name into database 
-            $insert = $conn->query("INSERT INTO property (name_, type_) VALUES $insertValuesSQL");
-            if ($insert) {
-                $statusMsg = "Files are uploaded successfully." . $errorMsg;
-            } else {
-                $statusMsg = "Sorry, there was an error uploading your file.";
+            try {
+                $insert = $conn->query("INSERT INTO property (name_, type_) VALUES $insertValuesSQL");
+                if ($insert) {
+                    $statusMsg = "Files are uploaded successfully." . $errorMsg;
+                }
+            } catch (mysqli_sql_exception $e) {
+                if ($conn->errno == 1062) { // Error code for duplicate entry
+                    echo "Error: Gallery name already exists.<br>";
+                } else {
+                    echo "Error: " . $sql . "<br>" . $conn->error;
+                }
             }
         } else {
             $statusMsg = "Upload failed! " . $errorMsg;
@@ -65,44 +68,44 @@ if (isset($_POST['add_property'])) {
     }
 
     // add categories 
-
-    if ($_POST['categories'] !== "") {
+    if (!empty($_POST['categories'])) {
         $categories = test_input($_POST['categories']);
-
-        $sql = "INSERT INTO property(type_, name_) values ('category','$categories')";
-
-        if (!$conn->query($sql) === TRUE) {
-            echo "Error: " . $sql . "<br>" . $conn->error;
+        $sql = "INSERT INTO property (type_, name_) VALUES ('category', '$categories')";
+        try {
+            if ($conn->query($sql) === TRUE) {
+                $result_cate = "New category created successfully";
+            }
+        } catch (mysqli_sql_exception $e) {
+            if ($conn->errno == 1062) { // Error code for duplicate entry
+                echo "Error: Category name already exists.<br>";
+            } else {
+                echo "Error: " . $sql . "<br>" . $conn->error;
+            }
         }
-    } else {
-        echo "";
     }
 
     // add tags 
-    if (
-        $_POST['tags'] !== ""
-    ) {
+    if (!empty($_POST['tags'])) {
         $tags = test_input($_POST['tags']);
-
-        $sql = "INSERT INTO property(type_, name_) values ('tag','$tags')";
-
-
-        if ($conn->query($sql) === TRUE) {
-            $result_tag = "New tag created successfully";
-        } else {
-            echo "Error: " . $sql . "<br>" . $conn->error;
+        $sql = "INSERT INTO property (type_, name_) VALUES ('tag', '$tags')";
+        try {
+            if ($conn->query($sql) === TRUE) {
+                $result_tag = "New tag created successfully";
+            }
+        } catch (mysqli_sql_exception $e) {
+            if ($conn->errno == 1062) { // Error code for duplicate entry
+                echo "Error: Tag name already exists<br>";
+            } else {
+                echo "Error: " . $sql . "<br>" . $conn->error;
+            }
         }
-    } else {
-        echo "";
     }
 
     if (empty($fileNames) && empty($categories) && empty($tags)) {
         echo 'No properties have been added yet';
     }
 }
-
 ?>
-
 
 <!DOCTYPE html>
 <html lang="en">
@@ -111,7 +114,6 @@ if (isset($_POST['add_property'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Property</title>
-
     <!-- semantic ui -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.5.0/semantic.min.css" integrity="sha512-KXol4x3sVoO+8ZsWPFI/r5KBVB/ssCGB5tsv2nVOKwLg33wTFP3fmnXa47FdSVIshVTgsYk/1734xSk9aFIa4A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <!-- css -->
@@ -126,9 +128,8 @@ if (isset($_POST['add_property'])) {
             <input type="file" name="gallery[]" accept=".jpg, .png, .jpeg" multiple>
             <div>
                 <?php
-                $result_gallery = "New gallery created successfully";
                 if (!empty($fileNames)) {
-                    echo $result_gallery;
+                    echo $statusMsg;
                 }
                 ?>
             </div>
@@ -136,34 +137,25 @@ if (isset($_POST['add_property'])) {
         <div class="field">
             <label>Categories</label>
             <input type="text" name="categories" placeholder="Categories">
-
             <div><?php
-                    $result_cate = "New category created successfully";
                     if (isset($categories) && $categories !== "") {
-                        echo $result_cate;
-                    } else {
                         echo "";
                     }
                     ?></div>
-
         </div>
         <div class="field">
             <label>Tags</label>
             <input type="text" name="tags" placeholder="Tags">
             <div><?php
-                    $result_tag = "New tag created successfully";
                     if (isset($tags) && $tags !== "") {
-                        echo $result_tag;
-                    } else {
                         echo "";
                     }
                     ?></div>
         </div>
         <div class="footer_property">
-                <a class="ui button" href="index.php">Back</a>
+            <a class="ui button" href="index.php">Back</a>
             <button name="add_property" class="ui button" type="submit">Add</button>
         </div>
-
     </form>
     <script src="script.js"></script>
 </body>
