@@ -63,6 +63,9 @@ if (isset($_POST['add_product'])) {
     } else {
         echo "Sorry, there was a problem uploading your file.";
     }
+
+
+    
 }
 
 function test_input($data)
@@ -181,6 +184,7 @@ function test_input($data)
         <div class="footer_property">
             <a class="ui button" href="index.php">Back</a>
             <button name="add_product" class="ui button" type="submit">Add</button>
+
         </div>
     </form>
 
@@ -206,5 +210,4 @@ function test_input($data)
         });
     </script>
 </body>
-
 </html>

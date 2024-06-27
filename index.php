@@ -158,6 +158,7 @@ $rs_result = $conn->query($query);
                                 <!-- <i class="edit icon"></i> -->
                                 Edit
                             </a>
+                            
                             <a href="delete.php?deleteid=<?php echo $row['id']; ?>" class="btn_delete">
                                 <!-- <i class="trash icon"></i> -->
                                 Delete
@@ -167,10 +168,10 @@ $rs_result = $conn->query($query);
                 <?php
                 }
                 ?>
+               
             </tbody>
         </table>
     </section>
-
     <div class="box_pagination">
         <div aria-label="Pagination Navigation" role="navigation" class="ui pagination menu">
             <?php
