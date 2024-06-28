@@ -159,7 +159,7 @@ function updateProductProperties($product_id, $properties, $type, $conn)
         </div>
         <div class="field">
             <label for="price">Price</label>
-            <input step=".01" type="number" min="0" name="price" value="<?php echo $price; ?>">
+            <input  step=".01" type="number"  name="price" value="<?php echo $price; ?>">
         </div>
         <div class="field">
             <label for="featured_image">Featured Image</label>

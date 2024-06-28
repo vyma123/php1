@@ -1,6 +1,8 @@
 <?php
 include 'db.php';
 
+
+
 if (isset($_POST['add_product'])) {
     $title = test_input($_POST['title']);
     $sku = test_input($_POST['sku']);
@@ -123,7 +125,7 @@ function test_input($data)
         </div>
         <div class="field">
             <label for="price">Price</label>
-            <input type="number" min="0" name="price">
+            <input step=".01" type="number" name="price">
         </div>
         <div class="field">
             <label for="featured_image">Featured Image</label>
