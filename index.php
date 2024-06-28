@@ -2,7 +2,7 @@
 include 'db.php';
 
 // Pagination settings
-$per_page_record = 17;
+$per_page_record = 5;
 $page = isset($_GET['page']) ? $_GET['page'] : 1;
 $start_from = ($page - 1) * $per_page_record;
 
@@ -37,7 +37,7 @@ $price_end = isset($_GET['price_end']) ? $_GET['price_end'] : '';
 $query = "
 SELECT 
     p.*, 
-    GROUP_CONCAT(g.name_ SEPARATOR ',') as galleries,
+    GROUP_CONCAT(DISTINCT g.name_ SEPARATOR ',') as galleries,
     GROUP_CONCAT(DISTINCT c.name_ SEPARATOR ', ') as categories,
     GROUP_CONCAT(DISTINCT t.name_ SEPARATOR ', ') as tags
 FROM 

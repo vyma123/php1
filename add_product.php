@@ -1,8 +1,6 @@
 <?php
 include 'db.php';
 
-
-
 if (isset($_POST['add_product'])) {
     $title = test_input($_POST['title']);
     $sku = test_input($_POST['sku']);
