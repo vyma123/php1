@@ -158,9 +158,11 @@ if (isset($_POST['edit_product'])) {
                 <?php
                 while ($gallery_data = $result_galleries->fetch_assoc()) {
                     $gallery_id = $gallery_data['id'];
+
                     $gallery_name = $gallery_data['name_'];
+
                     $selected = in_array($gallery_id, $selected_galleries) ? 'selected' : '';
-                    echo '<img src="./uploads/' . $gallery_name . '" alt="" width="80px" class="gallery-image ' . $selected . '" data-id="' . $gallery_id . '">';
+                    echo '<img src="./uploads/' . $gallery_name . '" alt="" width="80px" class="gallery-image' . $selected . '" data-id="' . $gallery_id . '">';
                 }
                 ?>
             </div>
@@ -172,7 +174,9 @@ if (isset($_POST['edit_product'])) {
                 <?php
                 while ($category_data = $result_categories->fetch_assoc()) {
                     $category_id = $category_data['id'];
+
                     $category_name = $category_data['name_'];
+
                     $selected = in_array($category_id, $selected_categories) ? 'selected' : '';
                     echo '<option value="' . $category_id . '" ' . $selected . '>' . $category_name . '</option>';
                 }
@@ -185,7 +189,9 @@ if (isset($_POST['edit_product'])) {
                 <?php
                 while ($tag_data = $result_tags->fetch_assoc()) {
                     $tag_id = $tag_data['id'];
+
                     $tag_name = $tag_data['name_'];
+                    
                     $selected = in_array($tag_id, $selected_tags) ? 'selected' : '';
                     echo '<option value="' . $tag_id . '" ' . $selected . '>' . $tag_name . '</option>';
                 }
@@ -197,26 +203,8 @@ if (isset($_POST['edit_product'])) {
             <button name="edit_product" class="ui button" type="submit">Save Changes</button>
         </div>
     </form>
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const galleryImages = document.querySelectorAll('.gallery-image');
-            const selectedGalleriesInput = document.getElementById('selectedGalleries');
-            let selectedGalleries = selectedGalleriesInput.value.split(',');
 
-            galleryImages.forEach(img => {
-                img.addEventListener('click', function() {
-                    const id = this.dataset.id;
-                    if (selectedGalleries.includes(id)) {
-                        selectedGalleries = selectedGalleries.filter(galleryId => galleryId !== id);
-                        this.classList.remove('selected');
-                    } else {
-                        selectedGalleries.push(id);
-                        this.classList.add('selected');
-                    }
-                    selectedGalleriesInput.value = selectedGalleries.join(',');
-                });
-            });
-        });
+    <script src="script.js">
     </script>
 </body>
 

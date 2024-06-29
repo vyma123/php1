@@ -126,7 +126,7 @@ $rs_result = $conn->query($query);
                         <div class="ui icon input">
                             <input name="search" class="search_input" type="text" placeholder="Search product..." value="<?php echo htmlspecialchars($search_term); ?>">
                             <button name="search_btn" class="search_btn">
-                                Search
+                                <i class="search link icon"></i>
                             </button>
                         </div>
                     </div>
@@ -233,10 +233,12 @@ $rs_result = $conn->query($query);
                             <td><?php echo $tags ?></td>
                             <td data-label="Job">
                                 <a href="edit.php?editid=<?php echo $row['id']; ?>" class="btn_edit openModal_edit">
-                                    Edit
+                                    <i class="edit icon"></i>
+
                                 </a>
                                 <a onclick="return confirm('sure to delete !'); " href="delete.php?deleteid=<?php echo $row['id']; ?>" class="btn_delete">
-                                    Delete
+                                    <i class="trash icon"></i>
+
                                 </a>
                             </td>
                         </tr>
