@@ -1,6 +1,6 @@
 <?php
 // Include the database configuration file 
-include 'db.php';
+include_once 'db.php';
 require_once 'functions.php';
 
 if (isset($_POST['add_property'])) {
@@ -60,11 +60,22 @@ if (isset($_POST['add_property'])) {
         $statusMsg = 'Please select a file to upload.';
     }
 
+
+    
   
 
     // add categories 
     if (!empty($_POST['categories'])) {
         $categories = test_input($_POST['categories']);
+
+        $u = "SELECT name_ from property where name_ = '$categories'";
+        $uu = mysqli_query($conn, $u);
+
+
+        if (mysqli_num_rows($uu) > 0) {
+            $result_cate = "<h5 class='warning'> This category already exists or duplicate with tag</h5>";
+        } else{
+            
         $sql = "INSERT INTO property (type_, name_) VALUES ('category', '$categories')";
         try {
             if ($conn->query($sql) === TRUE) {
@@ -78,10 +89,18 @@ if (isset($_POST['add_property'])) {
             }
         }
     }
+    }
 
     // add tags 
     if (!empty($_POST['tags'])) {
         $tags = test_input($_POST['tags']);
+        $u = "SELECT name_ from property where name_ = '$tags'";
+        $uu = mysqli_query($conn, $u);
+
+
+        if (mysqli_num_rows($uu) > 0) {
+            $result_tag = "<h5 class='warning'> This tag already exists or duplicate with category</h5>";
+        } else {
         $sql = "INSERT INTO property (type_, name_) VALUES ('tag', '$tags')";
         try {
             if ($conn->query($sql) === TRUE) {
@@ -94,6 +113,7 @@ if (isset($_POST['add_property'])) {
                 echo "Error: " . $sql . "<br>" . $conn->error;
             }
         }
+    }
     }
 
     if (empty($fileNames) && empty($categories) && empty($tags)) {

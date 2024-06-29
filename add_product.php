@@ -32,7 +32,7 @@ if (isset($_POST['add_product'])) {
         $uu = mysqli_query($conn, $u);
 
         if (mysqli_num_rows($uu) > 0) {
-            $check_sku = "<h5 class='warning'> duplicate sku</h5>";
+            $check_sku = "<h5 class='warning'>this sku already exists</h5>";
         } else {
             $sql = "INSERT INTO products (date, title, sku, price, featured_image) VALUES (NOW(), '$title', '$sku', '$price', '$Filename')";
 
@@ -139,9 +139,15 @@ if (isset($_POST['add_product'])) {
                 $sql = "SELECT id, name_ FROM property WHERE type_ = 'gallery'";
                 $result = $conn->query($sql);
 
+            
+               if ($result->num_rows > 0) {
                 while ($data = mysqli_fetch_array($result)) {
                     echo '<img src="./uploads/' . $data['name_'] . '" alt="" width="80px" height="80px" class="gallery-image" data-id="' . $data['id'] . '">';
                 }
+               }else {
+                echo 'No gallery available
+';
+               }
                 ?>
             </div>
             <input type="hidden" name="galleries" id="selectedGalleries">

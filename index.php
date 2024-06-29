@@ -2,7 +2,7 @@
 include 'db.php';
 
 // Pagination settings
-$per_page_record = 5;
+$per_page_record = 3;
 $page = isset($_GET['page']) ? $_GET['page'] : 1;
 $start_from = ($page - 1) * $per_page_record;
 
