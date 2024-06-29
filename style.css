@@ -212,3 +212,39 @@ select {
     align-items: center;
     justify-content: space-around;
 }
+
+   .gallery-image {
+       display: inline-block;
+       margin: 5px;
+       cursor: pointer;
+       border: 2px solid transparent;
+   }
+
+   .gallery-image.selected {
+       border: 2px solid blue;
+   }
+
+   label {
+       font-size: 1.2rem !important;
+   }
+
+   .field {
+       margin-bottom: 1.6rem !important;
+   }
+
+   .warning{
+    color: red;
+    margin: 0; 
+    padding: 0;
+   }
+
+       .gallery-image {
+            display: inline-block;
+            margin: 5px;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .gallery-image.selected {
+            border: 2px solid blue;
+        }

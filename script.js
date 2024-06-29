@@ -1,11 +1,28 @@
-function NameValidation(e){
 
-            if(!e.key.match(/^[a-zA-Z]*$/))
-            {
-                e.preventDefault();
-            }
-           
-        }
 
-        
-        
+document.addEventListener('DOMContentLoaded', function () {
+  const galleryImages = document.querySelectorAll(
+    '.gallery-image'
+  );
+  const selectedGalleriesInput = document.getElementById(
+    'selectedGalleries'
+  );
+  let selectedGalleries = [];
+
+  galleryImages.forEach((img) => {
+    img.addEventListener('click', function () {
+      const id = this.dataset.id;
+      if (selectedGalleries.includes(id)) {
+        selectedGalleries = selectedGalleries.filter(
+          (galleryId) => galleryId !== id
+        );
+        this.classList.remove('selected');
+      } else {
+        selectedGalleries.push(id);
+        this.classList.add('selected');
+      }
+      selectedGalleriesInput.value =
+        selectedGalleries.join(',');
+    });
+  });
+});

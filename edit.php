@@ -1,5 +1,7 @@
 <?php
 include 'db.php';
+require_once 'functions.php';
+
 
 $product_id = $_GET['editid'];
 
@@ -90,14 +92,7 @@ if (isset($_POST['edit_product'])) {
     }
 }
 
-function test_input($data)
-{
-    global $conn;
-    $data = trim($data);
-    $data = stripslashes($data);
-    $data = htmlspecialchars($data);
-    return $conn->real_escape_string($data);
-}
+
 
 function updateProductProperties($product_id, $properties, $type, $conn)
 {
@@ -132,18 +127,7 @@ function updateProductProperties($product_id, $properties, $type, $conn)
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Product</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.5.0/semantic.min.css" integrity="sha512-KXol4x3sVoO+8ZsWPFI/r5KBVB/ssCGB5tsv2nVOKwLg33wTFP3fmnXa47FdSVIshVTgsYk/1734xSk9aFIa4A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <style>
-        .gallery-image {
-            display: inline-block;
-            margin: 5px;
-            cursor: pointer;
-            border: 2px solid transparent;
-        }
-
-        .gallery-image.selected {
-            border: 2px solid blue;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
