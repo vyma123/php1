@@ -87,26 +87,7 @@ if (isset($_POST['add_product'])) {
     <title>Property</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.5.0/semantic.min.css" integrity="sha512-KXol4x3sVoO+8ZsWPFI/r5KBVB/ssCGB5tsv2nVOKwLg33wTFP3fmnXa47FdSVIshVTgsYk/1734xSk9aFIa4A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="style.css">
-    <style>
-        .gallery-image {
-            display: inline-block;
-            margin: 5px;
-            cursor: pointer;
-            border: 2px solid transparent;
-        }
-
-        .gallery-image.selected {
-            border: 2px solid blue;
-        }
-
-        label {
-            font-size: 1.2rem !important;
-        }
-
-        .field {
-            margin-bottom: 1.6rem !important;
-        }
-    </style>
+    
 </head>
 
 <body>
@@ -124,13 +105,15 @@ if (isset($_POST['add_product'])) {
             <input value="<?php
             global $check_sku;
             if ( isset($_POST['sku'])) echo $_POST['sku']; ?>" placeholder="required" type="text" name="sku">
-            <p><?php if (isset($status2)) {
+            <p>
+                <?php if (isset($status2)) {
                     echo "<h5 class='warning'>$status2</h5>";
                 } else {
                     global $check_sku;
                     echo $check_sku;
                 }
-                ?></p>
+                ?>
+                </p>
 
         </div>
         <div class="field">

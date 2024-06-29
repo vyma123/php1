@@ -2,7 +2,6 @@
 include 'db.php';
 require_once 'functions.php';
 
-
 $product_id = $_GET['editid'];
 
 // Fetch product details
@@ -57,64 +56,55 @@ if (isset($_POST['edit_product'])) {
     $sku = test_input($_POST['sku']);
     $price = test_input($_POST['price']);
 
-    // Update product details
-    $sql_update_product = "UPDATE products SET title = '$title', sku = '$sku', price = '$price' WHERE id = $product_id";
-    if ($conn->query($sql_update_product) === TRUE) {
+    $title == false ? $status1 = 'Required title' : '';
+    $sku == false ? $status2 = 'Required sku' : '';
+    $price == false ? $status3 = 'Required price' : '';
 
-        // Update featured image if a new one is uploaded
-        if ($_FILES['featured_image']['size'] > 0) {
-            $target = "uploads/";
-            $target = $target . basename($_FILES['featured_image']['name']);
-            $Filename = basename($_FILES['featured_image']['name']);
-            if (move_uploaded_file($_FILES['featured_image']['tmp_name'], $target)) {
-                $sql_update_image = "UPDATE products SET featured_image = '$Filename' WHERE id = $product_id";
-                $conn->query($sql_update_image);
-            } else {
-                echo "Sorry, there was a problem uploading your file.";
-            }
-        }
+    // Kiểm tra trùng SKU
+    $u = "SELECT sku FROM products WHERE sku = '$sku' AND id != '$product_id'";
+    $uu = mysqli_query($conn, $u);
 
-        // Update galleries
-        $galleries = isset($_POST['galleries']) ? explode(',', $_POST['galleries']) : [];
-        updateProductProperties($product_id, $galleries, 'gallery', $conn);
-
-        // Update categories
-        $categories = isset($_POST['categories']) ? $_POST['categories'] : [];
-        updateProductProperties($product_id, $categories, 'category', $conn);
-
-        // Update tags
-        $tags = isset($_POST['tags']) ? $_POST['tags'] : [];
-        updateProductProperties($product_id, $tags, 'tag', $conn);
-
-        echo "Product updated successfully";
+    if (mysqli_num_rows($uu) > 0) {
+        $check_sku = "<h5 class='warning'>Duplicate SKU</h5>";
     } else {
-        echo "Error updating product: " . $conn->error;
-    }
-}
+        // Update product details
+        $sql_update_product = "UPDATE products SET title = '$title', sku = '$sku', price = '$price' WHERE id = $product_id";
 
+        if (!empty($title && $sku && $price) && $conn->query($sql_update_product) === TRUE) {
 
+            // Update featured image if a new one is uploaded
+            if ($_FILES['featured_image']['size'] > 0) {
+                $target = "uploads/";
+                $target = $target . basename($_FILES['featured_image']['name']);
+                $Filename = basename($_FILES['featured_image']['name']);
+                if (move_uploaded_file($_FILES['featured_image']['tmp_name'], $target)) {
+                    $sql_update_image = "UPDATE products SET featured_image = '$Filename' WHERE id = $product_id";
+                    $conn->query($sql_update_image);
+                } else {
+                    echo "Sorry, there was a problem uploading your file.";
+                }
+            }
 
-function updateProductProperties($product_id, $properties, $type, $conn)
-{
-    // Validate properties
-    $valid_properties = [];
-    foreach ($properties as $property_id) {
-        $property_id = (int) $property_id;
-        $sql_validate_property = "SELECT id FROM property WHERE id = $property_id AND type_ = '$type'";
-        $result = $conn->query($sql_validate_property);
-        if ($result->num_rows > 0) {
-            $valid_properties[] = $property_id;
+            // Update galleries
+            $galleries = isset($_POST['galleries']) ? explode(',', $_POST['galleries']) : [];
+            updateProductProperties($product_id, $galleries, 'gallery', $conn);
+
+            // Update categories
+            $categories = isset($_POST['categories']) ? $_POST['categories'] : [];
+            updateProductProperties($product_id, $categories, 'category', $conn);
+
+            // Update tags
+            $tags = isset($_POST['tags']) ? $_POST['tags'] : [];
+            updateProductProperties($product_id, $tags, 'tag', $conn);
+
+           
+        echo "<SCRIPT> //not showing me this
+        alert('successfully')
+        window.location.replace('index.php');
+        </SCRIPT>";
+        } else {
+            echo "Error updating product: " . $conn->error;
         }
-    }
-
-    // Clear existing properties for the product
-    $sql_delete_old = "DELETE FROM product_property WHERE product_id = $product_id AND property_id IN (SELECT id FROM property WHERE type_ = '$type')";
-    $conn->query($sql_delete_old);
-
-    // Insert new properties
-    foreach ($valid_properties as $property_id) {
-        $sql_insert_new = "INSERT INTO product_property (product_id, property_id) VALUES ('$product_id', '$property_id')";
-        $conn->query($sql_insert_new);
     }
 }
 ?>
@@ -135,22 +125,33 @@ function updateProductProperties($product_id, $properties, $type, $conn)
     <form enctype="multipart/form-data" class="ui form" method="post">
         <div class="field">
             <label for="title">Product name</label>
-            <input name="title" value="<?php echo $title; ?>" required>
+            <input placeholder="required" name="title" value="<?php echo $title; ?>">
+            <p><?php if (isset($status1)) {
+                    echo "<h5 class='warning'>$status1</h5>";
+                } ?></p>
         </div>
         <div class="field">
             <label for="sku">SKU</label>
-            <input type="text" name="sku" value="<?php echo $sku; ?>" required>
+            <input type="text" name="sku" value="<?php echo $sku; ?>">
+            <p><?php if (isset($status2)) {
+                    echo "<h5 class='warning'>$status2</h5>";
+                } else {
+                    global $check_sku;
+                    echo $check_sku;
+                } ?></p>
         </div>
         <div class="field">
             <label for="price">Price</label>
-            <input  step=".01" type="number"  name="price" value="<?php echo $price; ?>">
+            <input min="0" step=".01" type="number" name="price" value="<?php echo $price; ?>">
+            <p><?php if (isset($status3)) {
+                    echo "<h5 class='warning'>$status3</h5>";
+                } ?></p>
         </div>
         <div class="field">
             <label for="featured_image">Featured Image</label>
             <input accept=".jpeg, .jpg, .png, .gif" type="file" name="featured_image">
             <img src="./uploads/<?php echo $featured_image; ?>" alt="Featured Image" width="80px">
         </div>
-
         <div class="field">
             <label for="gallery">Select Gallery</label>
             <div id="galleryPreview">
@@ -165,7 +166,6 @@ function updateProductProperties($product_id, $properties, $type, $conn)
             </div>
             <input type="hidden" name="galleries" id="selectedGalleries" value="<?php echo implode(',', $selected_galleries); ?>">
         </div>
-
         <div class="field">
             <label for="categories">Categories</label>
             <select name="categories[]" multiple>
@@ -179,7 +179,6 @@ function updateProductProperties($product_id, $properties, $type, $conn)
                 ?>
             </select>
         </div>
-
         <div class="field">
             <label for="tags">Tags</label>
             <select name="tags[]" multiple>
@@ -193,13 +192,11 @@ function updateProductProperties($product_id, $properties, $type, $conn)
                 ?>
             </select>
         </div>
-
         <div class="footer_property">
             <a class="ui button" href="index.php">Back</a>
             <button name="edit_product" class="ui button" type="submit">Save Changes</button>
         </div>
     </form>
-
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             const galleryImages = document.querySelectorAll('.gallery-image');

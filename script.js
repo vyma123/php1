@@ -26,3 +26,9 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 });
+
+function deleteid(id) {
+  if (confirm('Sure To Remove This Record ?')) {
+    window.location.href = 'delete.php?deleteid=' + id;
+  }
+}

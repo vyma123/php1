@@ -1,6 +1,7 @@
 <?php
 // Include the database configuration file 
-include_once 'db.php';
+include 'db.php';
+require_once 'functions.php';
 
 if (isset($_POST['add_property'])) {
     $fileNames = array_filter($_FILES['gallery']['name']);
@@ -59,13 +60,7 @@ if (isset($_POST['add_property'])) {
         $statusMsg = 'Please select a file to upload.';
     }
 
-    function test_input($data)
-    {
-        $data = trim($data);
-        $data = stripslashes($data);
-        $data = htmlspecialchars($data);
-        return $data;
-    }
+  
 
     // add categories 
     if (!empty($_POST['categories'])) {
@@ -139,7 +134,7 @@ if (isset($_POST['add_property'])) {
             <input type="text" name="categories" placeholder="Categories">
             <div><?php
                     if (isset($categories) && $categories !== "") {
-                        echo "";
+                        echo $result_cate;
                     }
                     ?></div>
         </div>
@@ -148,7 +143,7 @@ if (isset($_POST['add_property'])) {
             <input type="text" name="tags" placeholder="Tags">
             <div><?php
                     if (isset($tags) && $tags !== "") {
-                        echo "";
+                        echo $result_tag;
                     }
                     ?></div>
         </div>

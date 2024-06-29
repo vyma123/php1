@@ -248,3 +248,23 @@ select {
         .gallery-image.selected {
             border: 2px solid blue;
         }
+
+        
+                   .gallery-image {
+                       display: inline-block;
+                       margin: 5px;
+                       cursor: pointer;
+                       border: 2px solid transparent;
+                   }
+        
+                   .gallery-image.selected {
+                       border: 2px solid blue;
+                   }
+        
+                   label {
+                       font-size: 1.2rem !important;
+                   }
+        
+                   .field {
+                       margin-bottom: 1.6rem !important;
+                   }

@@ -235,7 +235,7 @@ $rs_result = $conn->query($query);
                                 <a href="edit.php?editid=<?php echo $row['id']; ?>" class="btn_edit openModal_edit">
                                     Edit
                                 </a>
-                                <a href="delete.php?deleteid=<?php echo $row['id']; ?>" class="btn_delete">
+                                <a onclick="return confirm('sure to delete !'); " href="delete.php?deleteid=<?php echo $row['id']; ?>" class="btn_delete">
                                     Delete
                                 </a>
                             </td>
