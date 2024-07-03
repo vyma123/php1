@@ -45,6 +45,7 @@ function updateProductProperties($product_id, $properties, $type, $conn)
 }
 
 
+function () {
 
+};
 
-?>

@@ -1,12 +1,8 @@
 <?php
 include 'db.php';
-
-// Pagination settings
-$per_page_record = 3;
-$page = isset($_GET['page']) ? $_GET['page'] : 1;
-$start_from = ($page - 1) * $per_page_record;
-
+require_once 'functions.php';
 // Initialize search term
+
 $search_term = isset($_GET['search']) ? $_GET['search'] : '';
 $search_term = trim($search_term);
 
@@ -23,6 +19,10 @@ if (isset($_SESSION['search_term'])) {
     $search_term = $_SESSION['search_term'];
 }
 
+
+
+
+
 // Filter settings
 $date_filter = isset($_GET['date_filter']) ? $_GET['date_filter'] : 'date';
 $sort_order = isset($_GET['sort_order']) ? $_GET['sort_order'] : 'ASC';
@@ -33,19 +33,27 @@ $end_date = isset($_GET['end_date']) ? $_GET['end_date'] : '';
 $price_start = isset($_GET['price_start']) ? $_GET['price_start'] : '';
 $price_end = isset($_GET['price_end']) ? $_GET['price_end'] : '';
 
+
+//Pagination page
+$data_per_page = 5;
+$total_data = mysqli_num_rows(mysqli_query($conn, "SELECT * FROM products"));
+$total_page = ceil($total_data / $data_per_page);
+$current_page = (isset($_GET['page'])) ? $_GET['page'] : 1;
+$current_data = ($data_per_page * $current_page) - $data_per_page;
+$limit_pages = 5;
+$number_of_pages = ($limit_pages + $current_page) - 1 > $total_page ? $total_page : ($limit_pages + $current_page) - 1;
+
+
+
 // Build SQL query with sorting and filters
 $query = "
 SELECT 
     p.*, 
-    GROUP_CONCAT(DISTINCT g.name_ SEPARATOR ',') as galleries,
     GROUP_CONCAT(DISTINCT c.name_ SEPARATOR ', ') as categories,
     GROUP_CONCAT(DISTINCT t.name_ SEPARATOR ', ') as tags
 FROM 
     products p
-LEFT JOIN 
-    product_property pg ON p.id = pg.product_id AND pg.property_id IN (SELECT id FROM property WHERE type_ = 'gallery')
-LEFT JOIN 
-    property g ON pg.property_id = g.id
+
 LEFT JOIN 
     product_property pc ON p.id = pc.product_id AND pc.property_id IN (SELECT id FROM property WHERE type_ = 'category')
 LEFT JOIN 
@@ -80,24 +88,24 @@ if (!empty($price_start)) {
 if (!empty($price_end)) {
     $query .= " AND p.price <= $price_end";
 }
-
 $query .= "
-GROUP BY 
-    p.id
-ORDER BY 
-    CASE
+ GROUP BY 
+ p.id
+ ORDER BY 
+ CASE
         WHEN '$date_filter' = 'product_name' THEN p.title 
-    END $sort_order,
-    CASE
+        END $sort_order,
+        CASE
         WHEN '$date_filter' = 'price' THEN p.price 
-    END $sort_order,
-    CASE
+        END $sort_order,
+        CASE
         WHEN '$date_filter' = 'date' THEN p.date 
+        ELSE p.date
     END $sort_order
 LIMIT 
-    $start_from, $per_page_record";
+ $current_data, $data_per_page";
+$rs_result = mysqli_query($conn, $query);
 
-$rs_result = $conn->query($query);
 ?>
 
 <!DOCTYPE html>
@@ -118,7 +126,7 @@ $rs_result = $conn->query($query);
     <header>
         <form action="" method="get">
             <div class="ui secondary menu">
-                <a href="add_product.php" class="ui button openModal">Add product</a>
+                <a href="edit_add.php" class="ui button openModal">Add product</a>
                 <a href="add_property.php" class="ui button">Add property</a>
                 <a class="ui button">Sync from VillaTheme</a>
                 <div class="right menu">
@@ -214,9 +222,9 @@ $rs_result = $conn->query($query);
                         $sku = $row['sku'];
                         $price = $row['price'];
                         $featured_image = $row['featured_image'];
-                        $galleries = explode(',', $row['galleries']);
                         $categories = $row['categories'];
                         $tags = $row['tags'];
+                        $gallery = $row['gallery'];
                 ?>
                         <tr>
                             <td><?php echo $date ?></td>
@@ -225,14 +233,18 @@ $rs_result = $conn->query($query);
                             <td><?php echo $price ?></td>
                             <td><img src="./uploads/<?php echo $featured_image ?>" alt="" width="30px"></td>
                             <td>
-                                <?php foreach ($galleries as $gallery_image) : ?>
-                                    <img src="./uploads/<?php echo $gallery_image ?>" alt="" width="30px">
+                                <?php
+                                $imageArray = explode(', ', $gallery);
+                                foreach ($imageArray as $image) :
+                                ?>
+                                    <img src="uploads/<?php echo $image ?>" alt="" width="30px" height="30px">
                                 <?php endforeach; ?>
+
                             </td>
                             <td><?php echo $categories ?></td>
                             <td><?php echo $tags ?></td>
                             <td data-label="Job">
-                                <a href="edit.php?editid=<?php echo $row['id']; ?>" class="btn_edit openModal_edit">
+                                <a href="edit_add.php?editid=<?php echo $row['id']; ?>" class="btn_edit openModal_edit">
                                     <i class="edit icon"></i>
 
                                 </a>
@@ -252,78 +264,42 @@ $rs_result = $conn->query($query);
         </table>
     </section>
 
+
+
     <div class="box_pagination">
         <div aria-label="Pagination Navigation" role="navigation" class="ui pagination menu">
             <?php
-            // Count the total number of records for pagination
-            $query = "
-            SELECT COUNT(DISTINCT p.id) 
-            FROM products p
-            LEFT JOIN product_property pg ON p.id = pg.product_id AND pg.property_id IN (SELECT id FROM property WHERE type_ = 'gallery')
-            LEFT JOIN property g ON pg.property_id = g.id
-            LEFT JOIN product_property pc ON p.id = pc.product_id AND pc.property_id IN (SELECT id FROM property WHERE type_ = 'category')
-            LEFT JOIN property c ON pc.property_id = c.id
-            LEFT JOIN product_property pt ON p.id = pt.product_id AND pt.property_id IN (SELECT id FROM property WHERE type_ = 'tag')
-            LEFT JOIN property t ON pt.property_id = t.id
-            WHERE p.title LIKE '%$search_term%'";
-
-            if (!empty($cat_filter)) {
-                $query .= " AND p.id IN (SELECT product_id FROM product_property WHERE property_id = $cat_filter)";
-            }
-
-            if (!empty($tag_filter)) {
-                $query .= " AND p.id IN (SELECT product_id FROM product_property WHERE property_id = $tag_filter)";
-            }
-
-            if (!empty($start_date)) {
-                $query .= " AND p.date >= '$start_date'";
-            }
-
-            if (!empty($end_date)) {
-                $query .= " AND p.date <= '$end_date'";
-            }
-
-            if (!empty($price_start)) {
-                $query .= " AND p.price >= $price_start";
-            }
-
-            if (!empty($price_end)) {
-                $query .= " AND p.price <= $price_end";
-            }
-
-            $rs_result = $conn->query($query);
-            $row = $rs_result->fetch_row();
-            $total_records = $row[0];
-            $total_pages = ceil($total_records / $per_page_record);
-
-            if ($page >= 2) {
-            ?>
-                <a href="index.php?page=<?php echo $page - 1; ?>&search=<?php echo htmlspecialchars($search_term); ?>&date_filter=<?php echo $date_filter; ?>&sort_order=<?php echo $sort_order; ?>&cat_filter=<?php echo $cat_filter; ?>&tag_filter=<?php echo $tag_filter; ?>&start_date=<?php echo $start_date; ?>&end_date=<?php echo $end_date; ?>&price_start=<?php echo $price_start; ?>&price_end=<?php echo $price_end; ?>" class="item">
-                    <i class="arrow left icon"></i>
+            if($current_page > 1) :?>
+                <a href="?page=<?= $current_page - 1; ?>" aria-current="false" aria-disabled="false"  aria-label="Previous item" type="prevItem" class="item">
+                    ⟨
                 </a>
-                <?php
-            }
-            for ($i = 1; $i <= $total_pages; $i++) {
-                if ($i == $page) {
-                ?>
-                    <a href="index.php?page=<?php echo $i; ?>&search=<?php echo htmlspecialchars($search_term); ?>&date_filter=<?php echo $date_filter; ?>&sort_order=<?php echo $sort_order; ?>&cat_filter=<?php echo $cat_filter; ?>&tag_filter=<?php echo $tag_filter; ?>&start_date=<?php echo $start_date; ?>&end_date=<?php echo $end_date; ?>&price_start=<?php echo $price_start; ?>&price_end=<?php echo $price_end; ?>" class="active item"><?php echo $i; ?></a>
-                <?php
-                } else {
-                ?>
-                    <a href="index.php?page=<?php echo $i; ?>&search=<?php echo htmlspecialchars($search_term); ?>&date_filter=<?php echo $date_filter; ?>&sort_order=<?php echo $sort_order; ?>&cat_filter=<?php echo $cat_filter; ?>&tag_filter=<?php echo $tag_filter; ?>&start_date=<?php echo $start_date; ?>&end_date=<?php echo $end_date; ?>&price_start=<?php echo $price_start; ?>&price_end=<?php echo $price_end; ?>" class="item"><?php echo $i; ?></a>
-                <?php
-                }
-            }
-            if ($page < $total_pages) {
-                ?>
-                <a href="index.php?page=<?php echo $page + 1; ?>&search=<?php echo htmlspecialchars($search_term); ?>&date_filter=<?php echo $date_filter; ?>&sort_order=<?php echo $sort_order; ?>&cat_filter=<?php echo $cat_filter; ?>&tag_filter=<?php echo $tag_filter; ?>&start_date=<?php echo $start_date; ?>&end_date=<?php echo $end_date; ?>&price_start=<?php echo $price_start; ?>&price_end=<?php echo $price_end; ?>" class="item">
-                    <i class="arrow right icon"></i>
-                </a>
-            <?php
-            }
+            <?php endif;?>
+              
+            <?php for ($i = 1; $i <= $number_of_pages; $i++) :
+            if($i == $current_page) :
             ?>
+                <a href="?page=<?= $i; ?>" aria-current="true" aria-disabled="false" tabindex="0" value="1" type="pageItem" class="item active">
+                    <?= $i; ?>
+                </a>
+            <?php else: ?>
+                  <a href="?page=<?= $i; ?>" aria-current="true" aria-disabled="false" tabindex="0" value="1" type="pageItem" class="item">
+                    <?= $i; ?>
+                </a>
+            <?php endif;
+                  endfor; ?>
+            <?php if($current_page < $total_page) : ?>
+            <a href="?page=<?= $current_page + 1; ?>" aria-current="false" aria-disabled="false" tabindex="0" value="2" aria-label="Next item" type="nextItem" class="item">
+                ⟩
+            </a>
+            <?php endif; ?>
         </div>
     </div>
+
+
+    <script src="sc.js">
+
+
+    </script>
 </body>
 
 </html>
