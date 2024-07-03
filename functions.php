@@ -1,5 +1,7 @@
 <?php
 include 'db.php';
+
+
 function test_input($data)
 {
     $data = trim($data);
@@ -7,6 +9,16 @@ function test_input($data)
     $data = htmlspecialchars($data);
     return $data;
 }
+
+function validate_and_escape($conn, $input, $type = 'string')
+{
+    if ($type == 'numeric') {
+        return is_numeric($input) ? $input : false;
+    }
+    return $conn->real_escape_string($input);
+}
+
+
 
 // check if property_id exists and is valid
 function isValidPropertyId($property_id, $type, $conn)

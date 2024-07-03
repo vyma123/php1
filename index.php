@@ -24,14 +24,17 @@ if (isset($_SESSION['search_term'])) {
 
 
 // Filter settings
-$date_filter = isset($_GET['date_filter']) ? $_GET['date_filter'] : 'date';
-$sort_order = isset($_GET['sort_order']) ? $_GET['sort_order'] : 'ASC';
-$cat_filter = isset($_GET['cat_filter']) ? $_GET['cat_filter'] : '';
-$tag_filter = isset($_GET['tag_filter']) ? $_GET['tag_filter'] : '';
-$start_date = isset($_GET['start_date']) ? $_GET['start_date'] : '';
-$end_date = isset($_GET['end_date']) ? $_GET['end_date'] : '';
-$price_start = isset($_GET['price_start']) ? $_GET['price_start'] : '';
-$price_end = isset($_GET['price_end']) ? $_GET['price_end'] : '';
+$date_filter = isset($_GET['date_filter']) ? validate_and_escape($conn, $_GET['date_filter']) : 'date';
+$sort_order = isset($_GET['sort_order']) ? validate_and_escape($conn, $_GET['sort_order']) : 'ASC';
+if($sort_order !== 'ASC' && $sort_order !== 'DESC'){
+    $sort_order= 'ASC';
+}
+$cat_filter = isset($_GET['cat_filter']) ? validate_and_escape($conn, $_GET['cat_filter'], 'numeric') : '';
+$tag_filter = isset($_GET['tag_filter']) ? validate_and_escape($conn, $_GET['tag_filter'], 'numeric') : '';
+$start_date = isset($_GET['start_date']) ? validate_and_escape($conn, $_GET['start_date']) : '';
+$end_date = isset($_GET['end_date']) ? validate_and_escape($conn, $_GET['end_date']) : '';
+$price_start = isset($_GET['price_start']) ? validate_and_escape($conn, $_GET['price_start'], 'numeric') : '';
+$price_end = isset($_GET['price_end']) ? validate_and_escape($conn, $_GET['price_end'], 'numeric') : '';
 
 
 //Pagination page
@@ -63,7 +66,10 @@ LEFT JOIN
 LEFT JOIN 
     property t ON pt.property_id = t.id
 WHERE 
-    p.title LIKE '%$search_term%'";
+    p.title LIKE '%".$conn->real_escape_string($search_term)."%'";
+
+
+
 
 if (!empty($cat_filter)) {
     $query .= " AND p.id IN (SELECT product_id FROM product_property WHERE property_id = $cat_filter)";
@@ -104,7 +110,12 @@ $query .= "
     END $sort_order
 LIMIT 
  $current_data, $data_per_page";
-$rs_result = mysqli_query($conn, $query);
+$rs_result = $conn->query($query);
+
+// $read = $conn->prepare($query);
+// $read->bind_param('s', $search_term);
+// $read->execute();
+// $rs_result = $read->get_result();
 
 ?>
 
