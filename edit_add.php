@@ -2,16 +2,25 @@
 include 'db.php';
 require_once 'functions.php';
 
-
 if (isset($_GET['editid'])) {
+    if (!is_numeric($_GET['editid'])) {
+        header('Location: error.php');
+        exit;
+    }
 
     $product_id = $_GET['editid'];
-    $sql_product = "SELECT * FROM products WHERE id = $product_id";
-    $result_product = $conn->query($sql_product);
-    $product_data = $result_product->fetch_assoc();
-}
-if (isset($product_id)) {
-    $name = "Edit Product";
+    $sql_product = $conn->prepare("SELECT * FROM products WHERE id = ?");
+    $sql_product->bind_param("i", $product_id);
+    $sql_product->execute();
+    $result_product = $sql_product->get_result();
+
+    if ($result_product->num_rows > 0) {
+        $product_data = $result_product->fetch_assoc();
+        $name = "Edit Product";
+    } else {
+        header('Location: error.php');
+        exit;
+    }
 } else {
     $name = "Add Product";
 }
@@ -40,57 +49,61 @@ if (isset($_POST['add_product'])) {
     $Filename = basename($_FILES['featured_image']['name']);
 
     if (move_uploaded_file($_FILES['featured_image']['tmp_name'], $target)) {
+    
+            $u = "SELECT sku from products where sku = '$sku'";
+            $uu = mysqli_query($conn, $u);
+        
 
-        $u = "SELECT sku from products where sku = '$sku'";
-        $uu = mysqli_query($conn, $u);
-
-        if (mysqli_num_rows($uu) > 0) {
+        if (mysqli_num_rows($uu) > 0 && !isset($product_id)) {
             $check_sku = "<h5 class='warning'>this sku already exists</h5>";
         } else {
-         
-
+        
                 for ($i = 0; $i < count($_FILES['galleries']['name']); $i++) {
                     $galleryName[] = basename($_FILES['galleries']['name'][$i]);
                     $uploadFile = $_FILES['galleries']['tmp_name'][$i];
                     $targetpath = "uploads/" . $galleryName[$i];
                     move_uploaded_file($uploadFile, $targetpath);
                 };
-                $product_id = $conn->insert_id;
+                // $product_id = $conn->insert_id;
                 $images = implode(', ', $_FILES['galleries']['name']);
+            if (isset($product_id)) {
+                if( is_numeric($_GET['editid'])){
 
-            $sql = $conn->prepare("INSERT INTO products (date, title, sku, price, featured_image,gallery) VALUES (NOW(), ?, ?, ?, ?, ?)");
+                    $sql = $conn->prepare("UPDATE products SET title=?, sku=?, price=?, featured_image=?, gallery=? WHERE id = ?");
+                    
+                    $sql->bind_param("ssdssi", $title, $sku, $price, $Filename, $images, $product_id);
+                    
+                    $sql->execute();
+                }
+            } else {
+                $sql = $conn->prepare("INSERT INTO products (date, title, sku, price, featured_image, gallery) VALUES (NOW(), ?, ?, ?, ?, ?)");
 
-            $sql->execute(array(
-                 $title,
-                 $sku,
-                 $price,
-                 $Filename,
-                 $images,
+                $sql->bind_param("sssds", $title, $sku, $price, $Filename, $images);
 
-            ));
-
-         
-
-
+                $sql->execute();
+            }
             if (!empty($title && $sku && $price)  === TRUE) {
-                $product_id = $conn->insert_id;
+                // $product_id = $conn->insert_id;
                 // Insert galleries if valid
 
 
                 // Insert categories if valid
                 foreach ($categories as $category_id) {
                     if (isValidPropertyId($category_id, 'category', $conn)) {
-                        $sql = "INSERT INTO product_property (product_id, property_id) VALUES ('$product_id', '$category_id')";
-                        $conn->query($sql);
+                        $sql =$conn->prepare("INSERT INTO product_property (product_id, property_id) VALUES (?, ?)");
+                     $sql->bind_param("ii",$product_id, $category_id);
+                     
                     }
+                    $sql-> execute();
                 }
 
                 // Insert tags if valid
                 foreach ($tags as $tag_id) {
                     if (isValidPropertyId($tag_id, 'tag', $conn)) {
-                        $sql = "INSERT INTO product_property (product_id, property_id) VALUES ('$product_id', '$tag_id')";
-                        $conn->query($sql);
+                        $sql = $conn->prepare("INSERT INTO product_property (product_id, property_id) VALUES (?, ?)");
+                        $sql->bind_param("ii", $product_id, $tag_id);
                     }
+                    $sql->execute();
                 }
 
                 echo "Product added successfully";

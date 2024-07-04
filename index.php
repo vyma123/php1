@@ -113,10 +113,7 @@ LIMIT
 
 $rs_result = $conn->query($query);
 
-if ($current_page >= $data_per_page) {
-    header('Location: error.php'); 
-    exit;
-}
+
 
 ?>
 
