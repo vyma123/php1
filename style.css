@@ -17,6 +17,7 @@ body {
 
 }
 
+
 header {
     padding: 1rem;
     border: 1px solid #aba7a7;
@@ -200,6 +201,13 @@ select {
     height: 650px;
 }
 
+.a {
+    text-align: center;
+}
+
+.er{
+    font-size: 5rem;
+}
 .back{
     font-size: 1rem;
     background: #e0e1e2 none;
@@ -250,21 +258,23 @@ select {
         }
 
         
-                   .gallery-image {
-                       display: inline-block;
-                       margin: 5px;
-                       cursor: pointer;
-                       border: 2px solid transparent;
-                   }
+ .gallery-image {
+     display: inline-block;
+     margin: 5px;
+     cursor: pointer;
+     border: 2px solid transparent;
+ }
         
-                   .gallery-image.selected {
-                       border: 2px solid blue;
-                   }
+ .gallery-image.selected {
+     border: 2px solid blue;
+ }
         
-                   label {
-                       font-size: 1.2rem !important;
-                   }
+ label {
+     font-size: 1.2rem !important;
+ }
         
-                   .field {
-                       margin-bottom: 1.6rem !important;
-                   }
+ .field {
+     margin-bottom: 1.6rem !important;
+ }
+
+ 

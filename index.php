@@ -56,31 +56,19 @@ if (!empty($price_end)) {
 $total_data_result = $conn->query($total_data_query);
 $total_data = $total_data_result->fetch_assoc()['total'];
 $total_page = ceil($total_data / $data_per_page);
-$current_page = (isset($_GET['page'])) ? $_GET['page'] : 1;
-$current_data = ($data_per_page * $current_page) - $data_per_page;
-$limit_pages = 5;
-$number_of_pages = ($limit_pages + $current_page) - 1 > $total_page ? $total_page : ($limit_pages + $current_page) - 1;
+$current_page = isset($_GET['page']) ? $_GET['page'] : 1;
+if (!is_numeric($current_page)) {
+    header('Location: error.php');
+    exit; 
+}
+
+$current_page = intval($current_page);
+$current_data = max(0, ($current_page - 1) * $data_per_page);
+$number_of_pages = ($data_per_page + $current_page) - 1 > $total_page ? $total_page : ($data_per_page + $current_page) - 1;
+
 
 // Build SQL query with sorting and filters
-$query = "
-SELECT 
-    p.*, 
-    GROUP_CONCAT(DISTINCT c.name_ SEPARATOR ', ') as categories,
-    GROUP_CONCAT(DISTINCT t.name_ SEPARATOR ', ') as tags
-
-FROM 
-    products p
-
-LEFT JOIN 
-    product_property pc ON p.id = pc.product_id AND pc.property_id IN (SELECT id FROM property WHERE type_ = 'category')
-LEFT JOIN 
-    property c ON pc.property_id = c.id
-LEFT JOIN 
-    product_property pt ON p.id = pt.product_id AND pt.property_id IN (SELECT id FROM property WHERE type_ = 'tag')
-LEFT JOIN 
-    property t ON pt.property_id = t.id
-WHERE 
-    p.title LIKE '%" . $conn->real_escape_string($search_term) . "%'";
+$query = query_filter($conn, $search_term);
 
 if (!empty($cat_filter)) {
     $query .= " AND p.id IN (SELECT product_id FROM product_property WHERE property_id = $cat_filter)";
@@ -124,6 +112,12 @@ LIMIT
     $current_data, $data_per_page";
 
 $rs_result = $conn->query($query);
+
+if ($current_page >= $data_per_page) {
+    header('Location: error.php'); 
+    exit;
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -205,10 +199,10 @@ $rs_result = $conn->query($query);
                     <input type="date" name="end_date" value="<?php echo htmlspecialchars($end_date); ?>">
                 </div>
                 <div class="ui input">
-                    <input type="text" name="price_start" placeholder="Price from" value="<?php echo htmlspecialchars($price_start); ?>">
+                    <input min="0" type="number" name="price_start" placeholder="Price from" value="<?php echo htmlspecialchars($price_start); ?>">
                 </div>
                 <div class="ui input">
-                    <input type="text" name="price_end" placeholder="Price to" value="<?php echo htmlspecialchars($price_end); ?>">
+                    <input min="0" type="number" name="price_end" placeholder="Price to" value="<?php echo htmlspecialchars($price_end); ?>">
                 </div>
                 <button name="search_btn" class="filter ui button">Filter</button>
             </div>
@@ -271,7 +265,7 @@ $rs_result = $conn->query($query);
                 <?php
                     }
                 } else {
-                    echo "<tr><td colspan='9' style='text-align:center;'>No data found</td></tr>";
+                    echo "<tr><td class='warning' colspan='9' style='text-align:center;'>No data found!</td></tr>";
                 }
                 ?>
             </tbody>
@@ -281,7 +275,7 @@ $rs_result = $conn->query($query);
     <div class="box_pagination">
         <div aria-label="Pagination Navigation" role="navigation" class="ui pagination menu">
             <?php
-            $url_params = "&search=" . urlencode($search_term) . "&date_filter=$date_filter&sort_order=$sort_order&cat_filter=$cat_filter&tag_filter=$tag_filter&start_date=$start_date&end_date=$end_date&price_start=$price_start&price_end=$price_end";
+            $url_params = keep_data_when_filter($search_term, $date_filter, $sort_order, $cat_filter, $tag_filter, $start_date, $end_date, $price_start, $price_end);
 
             if ($current_page > 1) : ?>
                 <a href="?page=<?= $current_page - 1 . $url_params; ?>" aria-current="false" aria-disabled="false" aria-label="Previous item" type="prevItem" class="item">
