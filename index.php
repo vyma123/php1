@@ -1,8 +1,8 @@
 <?php
 include 'db.php';
 require_once 'functions.php';
-// Initialize search term
 
+// Initialize search term
 $search_term = isset($_GET['search']) ? $_GET['search'] : '';
 $search_term = trim($search_term);
 
@@ -19,15 +19,11 @@ if (isset($_SESSION['search_term'])) {
     $search_term = $_SESSION['search_term'];
 }
 
-
-
-
-
 // Filter settings
 $date_filter = isset($_GET['date_filter']) ? validate_and_escape($conn, $_GET['date_filter']) : 'date';
 $sort_order = isset($_GET['sort_order']) ? validate_and_escape($conn, $_GET['sort_order']) : 'ASC';
-if($sort_order !== 'ASC' && $sort_order !== 'DESC'){
-    $sort_order= 'ASC';
+if ($sort_order !== 'ASC' && $sort_order !== 'DESC') {
+    $sort_order = 'ASC';
 }
 $cat_filter = isset($_GET['cat_filter']) ? validate_and_escape($conn, $_GET['cat_filter'], 'numeric') : '';
 $tag_filter = isset($_GET['tag_filter']) ? validate_and_escape($conn, $_GET['tag_filter'], 'numeric') : '';
@@ -36,17 +32,34 @@ $end_date = isset($_GET['end_date']) ? validate_and_escape($conn, $_GET['end_dat
 $price_start = isset($_GET['price_start']) ? validate_and_escape($conn, $_GET['price_start'], 'numeric') : '';
 $price_end = isset($_GET['price_end']) ? validate_and_escape($conn, $_GET['price_end'], 'numeric') : '';
 
-
-//Pagination page
+// Pagination settings
 $data_per_page = 5;
-$total_data = mysqli_num_rows(mysqli_query($conn, "SELECT * FROM products"));
+$total_data_query = "SELECT COUNT(*) as total FROM products WHERE title LIKE '%" . $conn->real_escape_string($search_term) . "%'";
+if (!empty($cat_filter)) {
+    $total_data_query .= " AND id IN (SELECT product_id FROM product_property WHERE property_id = $cat_filter)";
+}
+if (!empty($tag_filter)) {
+    $total_data_query .= " AND id IN (SELECT product_id FROM product_property WHERE property_id = $tag_filter)";
+}
+if (!empty($start_date)) {
+    $total_data_query .= " AND date >= '$start_date'";
+}
+if (!empty($end_date)) {
+    $total_data_query .= " AND date <= '$end_date'";
+}
+if (!empty($price_start)) {
+    $total_data_query .= " AND price >= $price_start";
+}
+if (!empty($price_end)) {
+    $total_data_query .= " AND price <= $price_end";
+}
+$total_data_result = $conn->query($total_data_query);
+$total_data = $total_data_result->fetch_assoc()['total'];
 $total_page = ceil($total_data / $data_per_page);
 $current_page = (isset($_GET['page'])) ? $_GET['page'] : 1;
 $current_data = ($data_per_page * $current_page) - $data_per_page;
 $limit_pages = 5;
 $number_of_pages = ($limit_pages + $current_page) - 1 > $total_page ? $total_page : ($limit_pages + $current_page) - 1;
-
-
 
 // Build SQL query with sorting and filters
 $query = "
@@ -54,6 +67,7 @@ SELECT
     p.*, 
     GROUP_CONCAT(DISTINCT c.name_ SEPARATOR ', ') as categories,
     GROUP_CONCAT(DISTINCT t.name_ SEPARATOR ', ') as tags
+
 FROM 
     products p
 
@@ -66,10 +80,7 @@ LEFT JOIN
 LEFT JOIN 
     property t ON pt.property_id = t.id
 WHERE 
-    p.title LIKE '%".$conn->real_escape_string($search_term)."%'";
-
-
-
+    p.title LIKE '%" . $conn->real_escape_string($search_term) . "%'";
 
 if (!empty($cat_filter)) {
     $query .= " AND p.id IN (SELECT product_id FROM product_property WHERE property_id = $cat_filter)";
@@ -94,29 +105,25 @@ if (!empty($price_start)) {
 if (!empty($price_end)) {
     $query .= " AND p.price <= $price_end";
 }
+
 $query .= "
- GROUP BY 
- p.id
- ORDER BY 
- CASE
+GROUP BY 
+    p.id
+ORDER BY 
+    CASE
         WHEN '$date_filter' = 'product_name' THEN p.title 
-        END $sort_order,
-        CASE
+    END $sort_order,
+    CASE
         WHEN '$date_filter' = 'price' THEN p.price 
-        END $sort_order,
-        CASE
+    END $sort_order,
+    CASE
         WHEN '$date_filter' = 'date' THEN p.date 
-        ELSE p.date
-    END $sort_order
+    ELSE p.date
+END $sort_order
 LIMIT 
- $current_data, $data_per_page";
+    $current_data, $data_per_page";
+
 $rs_result = $conn->query($query);
-
-// $read = $conn->prepare($query);
-// $read->bind_param('s', $search_term);
-// $read->execute();
-// $rs_result = $read->get_result();
-
 ?>
 
 <!DOCTYPE html>
@@ -180,7 +187,7 @@ $rs_result = $conn->query($query);
                 </div>
                 <div>
                     <select name="tag_filter" class="tag ui dropdown">
-                        <option value="" <?php if ($tag_filter == '') echo 'selected'; ?>>Select tag</option>
+                        <option value="" <?php if ($tag_filter == '') echo 'selected'; ?>>Tag</option>
                         <!-- Populate tag options from the database -->
                         <?php
                         $tag_query = "SELECT id, name_ FROM property WHERE type_ = 'tag'";
@@ -191,19 +198,18 @@ $rs_result = $conn->query($query);
                         ?>
                     </select>
                 </div>
-                <div class="ui input">
+                <div>
                     <input type="date" name="start_date" value="<?php echo htmlspecialchars($start_date); ?>">
                 </div>
-                <div class="ui input">
+                <div>
                     <input type="date" name="end_date" value="<?php echo htmlspecialchars($end_date); ?>">
                 </div>
                 <div class="ui input">
-                    <input type="text" name="price_start" placeholder="price from" value="<?php echo htmlspecialchars($price_start); ?>">
+                    <input type="text" name="price_start" placeholder="Price from" value="<?php echo htmlspecialchars($price_start); ?>">
                 </div>
                 <div class="ui input">
-                    <input type="text" name="price_end" placeholder="price to" value="<?php echo htmlspecialchars($price_end); ?>">
+                    <input type="text" name="price_end" placeholder="Price to" value="<?php echo htmlspecialchars($price_end); ?>">
                 </div>
-
                 <button name="search_btn" class="filter ui button">Filter</button>
             </div>
         </form>
@@ -250,18 +256,15 @@ $rs_result = $conn->query($query);
                                 ?>
                                     <img src="uploads/<?php echo $image ?>" alt="" width="30px" height="30px">
                                 <?php endforeach; ?>
-
                             </td>
                             <td><?php echo $categories ?></td>
                             <td><?php echo $tags ?></td>
-                            <td data-label="Job">
+                            <td data-label="Action">
                                 <a href="edit_add.php?editid=<?php echo $row['id']; ?>" class="btn_edit openModal_edit">
                                     <i class="edit icon"></i>
-
                                 </a>
-                                <a onclick="return confirm('sure to delete !'); " href="delete.php?deleteid=<?php echo $row['id']; ?>" class="btn_delete">
+                                <a onclick="return confirm('Are you sure you want to delete?');" href="delete.php?deleteid=<?php echo $row['id']; ?>" class="btn_delete">
                                     <i class="trash icon"></i>
-
                                 </a>
                             </td>
                         </tr>
@@ -275,42 +278,38 @@ $rs_result = $conn->query($query);
         </table>
     </section>
 
-
-
     <div class="box_pagination">
         <div aria-label="Pagination Navigation" role="navigation" class="ui pagination menu">
             <?php
-            if($current_page > 1) :?>
-                <a href="?page=<?= $current_page - 1; ?>" aria-current="false" aria-disabled="false"  aria-label="Previous item" type="prevItem" class="item">
+            $url_params = "&search=" . urlencode($search_term) . "&date_filter=$date_filter&sort_order=$sort_order&cat_filter=$cat_filter&tag_filter=$tag_filter&start_date=$start_date&end_date=$end_date&price_start=$price_start&price_end=$price_end";
+
+            if ($current_page > 1) : ?>
+                <a href="?page=<?= $current_page - 1 . $url_params; ?>" aria-current="false" aria-disabled="false" aria-label="Previous item" type="prevItem" class="item">
                     ⟨
                 </a>
-            <?php endif;?>
-              
+            <?php endif; ?>
+
             <?php for ($i = 1; $i <= $number_of_pages; $i++) :
-            if($i == $current_page) :
-            ?>
-                <a href="?page=<?= $i; ?>" aria-current="true" aria-disabled="false" tabindex="0" value="1" type="pageItem" class="item active">
-                    <?= $i; ?>
-                </a>
-            <?php else: ?>
-                  <a href="?page=<?= $i; ?>" aria-current="true" aria-disabled="false" tabindex="0" value="1" type="pageItem" class="item">
-                    <?= $i; ?>
-                </a>
+                if ($i == $current_page) : ?>
+                    <a href="?page=<?= $i . $url_params; ?>" aria-current="true" aria-disabled="false" tabindex="0" value="1" type="pageItem" class="item active">
+                        <?= $i; ?>
+                    </a>
+                <?php else : ?>
+                    <a href="?page=<?= $i . $url_params; ?>" aria-current="true" aria-disabled="false" tabindex="0" value="1" type="pageItem" class="item">
+                        <?= $i; ?>
+                    </a>
             <?php endif;
-                  endfor; ?>
-            <?php if($current_page < $total_page) : ?>
-            <a href="?page=<?= $current_page + 1; ?>" aria-current="false" aria-disabled="false" tabindex="0" value="2" aria-label="Next item" type="nextItem" class="item">
-                ⟩
-            </a>
+            endfor; ?>
+
+            <?php if ($current_page < $total_page) : ?>
+                <a href="?page=<?= $current_page + 1 . $url_params; ?>" aria-current="false" aria-disabled="false" tabindex="0" value="2" aria-label="Next item" type="nextItem" class="item">
+                    ⟩
+                </a>
             <?php endif; ?>
         </div>
     </div>
 
-
-    <script src="sc.js">
-
-
-    </script>
+    <script src="sc.js"></script>
 </body>
 
 </html>
