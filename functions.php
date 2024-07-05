@@ -88,7 +88,18 @@ function updateProductProperties($product_id, $properties, $type, $conn)
 }
 
 
-function () {
 
-};
-
+function validateAndRedirectIfNotNumeric($conn, &$param, $default = '')
+{
+    if (isset($_GET[$param])) {
+        $param_value = validate_and_escape($conn, $_GET[$param], 'numeric');
+        if (!is_numeric($param_value) && !empty($param_value)) {
+            header('Location: index.php');
+            exit;
+        } else {
+            $param = $param_value;
+        }
+    } else {
+        $param = $default;
+    }
+}

@@ -21,12 +21,29 @@ if (isset($_SESSION['search_term'])) {
 
 // Filter settings
 $date_filter = isset($_GET['date_filter']) ? validate_and_escape($conn, $_GET['date_filter']) : 'date';
+$valid_filters = array('date', 'product_name', 'price');
+
+if (!in_array($date_filter, $valid_filters)) {
+    header('Location: index.php');
+    exit;
+}
 $sort_order = isset($_GET['sort_order']) ? validate_and_escape($conn, $_GET['sort_order']) : 'ASC';
-if ($sort_order !== 'ASC' && $sort_order !== 'DESC') {
-    $sort_order = 'ASC';
+
+$valid_filters = array('ASC', 'DESC');
+
+if (!in_array($sort_order, $valid_filters)) {
+    header('Location: index.php');
+    exit;
 }
 $cat_filter = isset($_GET['cat_filter']) ? validate_and_escape($conn, $_GET['cat_filter'], 'numeric') : '';
+
 $tag_filter = isset($_GET['tag_filter']) ? validate_and_escape($conn, $_GET['tag_filter'], 'numeric') : '';
+$valid_filters = array('ASC', 'DESC');
+
+if (!in_array($sort_order, $valid_filters)) {
+    header('Location: index.php');
+    exit;
+}
 $start_date = isset($_GET['start_date']) ? validate_and_escape($conn, $_GET['start_date']) : '';
 $end_date = isset($_GET['end_date']) ? validate_and_escape($conn, $_GET['end_date']) : '';
 $price_start = isset($_GET['price_start']) ? validate_and_escape($conn, $_GET['price_start'], 'numeric') : '';
@@ -189,10 +206,10 @@ $rs_result = $conn->query($query);
                         ?>
                     </select>
                 </div>
-                <div>
+                <div class="ui input">
                     <input type="date" name="start_date" value="<?php echo htmlspecialchars($start_date); ?>">
                 </div>
-                <div>
+                <div class="ui input">
                     <input type="date" name="end_date" value="<?php echo htmlspecialchars($end_date); ?>">
                 </div>
                 <div class="ui input">

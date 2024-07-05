@@ -7,7 +7,7 @@
 }
 
 body {
-    padding: 2rem;
+    padding: 6rem !important;
 }
 
 .flex_b {
@@ -277,4 +277,15 @@ select {
      margin-bottom: 1.6rem !important;
  }
 
- 
+ .images_gallery{
+    display: flex;
+    gap: 2rem;
+ }
+
+ li{
+    list-style: none;
+ }
+
+ .images_gallery img{
+    object-fit: cover;
+ }

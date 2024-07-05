@@ -17,6 +17,17 @@ if (isset($_GET['editid'])) {
     if ($result_product->num_rows > 0) {
         $product_data = $result_product->fetch_assoc();
         $name = "Edit Product";
+        if ($name == "Edit Product") {
+            $sql_product_properties = $conn->prepare("SELECT property_id FROM product_property WHERE product_id = ?");
+            $sql_product_properties->bind_param("i", $product_id);
+            $sql_product_properties->execute();
+            $result_product_properties = $sql_product_properties->get_result();
+
+            $product_properties = [];
+            while ($row = $result_product_properties->fetch_assoc()) {
+                $product_properties[] = $row['property_id'];
+            }
+        }
     } else {
         header('Location: error.php');
         exit;
@@ -49,62 +60,65 @@ if (isset($_POST['add_product'])) {
     $Filename = basename($_FILES['featured_image']['name']);
 
     if (move_uploaded_file($_FILES['featured_image']['tmp_name'], $target)) {
-    
-            $u = "SELECT sku from products where sku = '$sku'";
-            $uu = mysqli_query($conn, $u);
-        
+
+        $u = "SELECT sku from products where sku = '$sku'";
+        $uu = mysqli_query($conn, $u);
+
 
         if (mysqli_num_rows($uu) > 0 && !isset($product_id)) {
             $check_sku = "<h5 class='warning'>this sku already exists</h5>";
         } else {
-        
-                for ($i = 0; $i < count($_FILES['galleries']['name']); $i++) {
-                    $galleryName[] = basename($_FILES['galleries']['name'][$i]);
-                    $uploadFile = $_FILES['galleries']['tmp_name'][$i];
-                    $targetpath = "uploads/" . $galleryName[$i];
-                    move_uploaded_file($uploadFile, $targetpath);
-                };
-                // $product_id = $conn->insert_id;
-                $images = implode(', ', $_FILES['galleries']['name']);
+
+            for ($i = 0; $i < count($_FILES['galleries']['name']); $i++) {
+                $galleryName[] = basename($_FILES['galleries']['name'][$i]);
+                $uploadFile = $_FILES['galleries']['tmp_name'][$i];
+                $targetpath = "uploads/" . $galleryName[$i];
+                move_uploaded_file($uploadFile, $targetpath);
+            };
+            // $product_id = $conn->insert_id;
+            $images = implode(', ', $_FILES['galleries']['name']);
             if (isset($product_id)) {
-                if( is_numeric($_GET['editid'])){
+                if (is_numeric($_GET['editid'])) {
 
                     $sql = $conn->prepare("UPDATE products SET title=?, sku=?, price=?, featured_image=?, gallery=? WHERE id = ?");
-                    
+
                     $sql->bind_param("ssdssi", $title, $sku, $price, $Filename, $images, $product_id);
-                    
+
                     $sql->execute();
                 }
             } else {
                 $sql = $conn->prepare("INSERT INTO products (date, title, sku, price, featured_image, gallery) VALUES (NOW(), ?, ?, ?, ?, ?)");
 
-                $sql->bind_param("sssds", $title, $sku, $price, $Filename, $images);
+                $sql->bind_param("sssss", $title, $sku, $price, $Filename, $images);
 
                 $sql->execute();
             }
             if (!empty($title && $sku && $price)  === TRUE) {
-                // $product_id = $conn->insert_id;
-                // Insert galleries if valid
-
-
-                // Insert categories if valid
-                foreach ($categories as $category_id) {
-                    if (isValidPropertyId($category_id, 'category', $conn)) {
-                        $sql =$conn->prepare("INSERT INTO product_property (product_id, property_id) VALUES (?, ?)");
-                     $sql->bind_param("ii",$product_id, $category_id);
-                     
-                    }
-                    $sql-> execute();
+                if (!isset($product_id)) {
+                    $product_id = $conn->insert_id;
                 }
 
-                // Insert tags if valid
+                $sql_clear = $conn->prepare("DELETE FROM product_property WHERE product_id = ?");
+                $sql_clear->bind_param("i", $product_id);
+                $sql_clear->execute();
+
+
+                foreach ($categories as $category_id) {
+                    if (isValidPropertyId($category_id, 'category', $conn)) {
+                        $sql = $conn->prepare("INSERT INTO product_property (product_id, property_id) VALUES (?, ?)");
+                        $sql->bind_param("ii", $product_id, $category_id);
+                        $sql->execute();
+                    }
+                }
+
                 foreach ($tags as $tag_id) {
                     if (isValidPropertyId($tag_id, 'tag', $conn)) {
                         $sql = $conn->prepare("INSERT INTO product_property (product_id, property_id) VALUES (?, ?)");
                         $sql->bind_param("ii", $product_id, $tag_id);
+                        $sql->execute();
                     }
-                    $sql->execute();
                 }
+
 
                 echo "Product added successfully";
             } else {
@@ -115,11 +129,6 @@ if (isset($_POST['add_product'])) {
     } else {
         $errorFile =  "Sorry, there was a problem uploading your file.";
     }
-
-  
-
-
-    
 }
 
 
@@ -187,14 +196,18 @@ if (isset($_POST['add_product'])) {
         <div class="field">
             <label for="categories">Categories</label>
             <?php
-            
             $sql = "SELECT id, name_ FROM property WHERE type_ = 'category'";
             $result = $conn->query($sql);
 
             if ($result->num_rows > 0) {
                 echo '<select name="categories[]" multiple>';
                 while ($data = mysqli_fetch_array($result)) {
-                    echo '<option value="' . $data['id'] . '">' . $data['name_'] . '</option>';
+                    // Check if editing and category is selected for the product
+                    $selected = '';
+                    if ($name == "Edit Product" && in_array($data['id'], $product_properties)) {
+                        $selected = 'selected';
+                    }
+                    echo '<option value="' . $data['id'] . '" ' . $selected . '>' . $data['name_'] . '</option>';
                 }
                 echo '</select>';
             } else {
@@ -212,7 +225,12 @@ if (isset($_POST['add_product'])) {
             if ($result->num_rows > 0) {
                 echo '<select name="tags[]" multiple>';
                 while ($data = mysqli_fetch_array($result)) {
-                    echo '<option value="' . $data['id'] . '">' . $data['name_'] . '</option>';
+                    // Check if editing and tag is selected for the product
+                    $selected = '';
+                    if ($name == "Edit Product" && in_array($data['id'], $product_properties)) {
+                        $selected = 'selected';
+                    }
+                    echo '<option value="' . $data['id'] . '" ' . $selected . '>' . $data['name_'] . '</option>';
                 }
                 echo '</select>';
             } else {
@@ -220,6 +238,7 @@ if (isset($_POST['add_product'])) {
             }
             ?>
         </div>
+
 
         <div class="footer_property">
             <a class="ui button" href="index.php">Back</a>
