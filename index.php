@@ -50,7 +50,7 @@ $price_start = isset($_GET['price_start']) ? validate_and_escape($conn, $_GET['p
 $price_end = isset($_GET['price_end']) ? validate_and_escape($conn, $_GET['price_end'], 'numeric') : '';
 
 // Pagination settings
-$data_per_page = 5;
+$data_per_page = 3;
 $total_data_query = "SELECT COUNT(*) as total FROM products WHERE title LIKE '%" . $conn->real_escape_string($search_term) . "%'";
 if (!empty($cat_filter)) {
     $total_data_query .= " AND id IN (SELECT product_id FROM product_property WHERE property_id = $cat_filter)";

@@ -16,6 +16,16 @@ if (isset($_GET['editid'])) {
 
     if ($result_product->num_rows > 0) {
         $product_data = $result_product->fetch_assoc();
+        $title = $product_data['title'];
+        $sku = $product_data['sku'];
+        $price = trim($product_data['price']);
+
+        $featured_image = $product_data['featured_image'];
+        $gallery_image = $product_data['gallery'];
+
+
+
+
         $name = "Edit Product";
         if ($name == "Edit Product") {
             $sql_product_properties = $conn->prepare("SELECT property_id FROM product_property WHERE product_id = ?");
@@ -36,15 +46,11 @@ if (isset($_GET['editid'])) {
     $name = "Add Product";
 }
 
-
-
-
-
 if (isset($_POST['add_product'])) {
 
     $title = test_input($_POST['title']);
     $sku = test_input($_POST['sku']);
-    $price = test_input($_POST['price']);
+    $price = trim(test_input($_POST['price']));
 
     $title == false ? $status1 = 'Required title' : '';
     $sku == false ? $status2 = 'Required sku' : '';
@@ -58,6 +64,8 @@ if (isset($_POST['add_product'])) {
     $target = "uploads/";
     $target = $target . basename($_FILES['featured_image']['name']);
     $Filename = basename($_FILES['featured_image']['name']);
+
+    $gallery_selected = !empty(array_filter($_FILES['galleries']['name']));
 
     if (move_uploaded_file($_FILES['featured_image']['tmp_name'], $target)) {
 
@@ -75,25 +83,25 @@ if (isset($_POST['add_product'])) {
                 $targetpath = "uploads/" . $galleryName[$i];
                 move_uploaded_file($uploadFile, $targetpath);
             };
-            // $product_id = $conn->insert_id;
             $images = implode(', ', $_FILES['galleries']['name']);
             if (isset($product_id)) {
                 if (is_numeric($_GET['editid'])) {
-
-                    $sql = $conn->prepare("UPDATE products SET title=?, sku=?, price=?, featured_image=?, gallery=? WHERE id = ?");
-
-                    $sql->bind_param("ssdssi", $title, $sku, $price, $Filename, $images, $product_id);
-
-                    $sql->execute();
+                    if (!$gallery_selected) {
+                        $sql = $conn->prepare("UPDATE products SET title=?, sku=?, price=? WHERE id = ?");
+                        $sql->bind_param("ssdi", $title, $sku, $price, $product_id);
+                        $sql->execute();
+                    } else {
+                        $sql = $conn->prepare("UPDATE products SET title=?, sku=?, price=?, featured_image=?, gallery=? WHERE id = ?");
+                        $sql->bind_param("ssdssi", $title, $sku, $price, $Filename, $images, $product_id);
+                        $sql->execute();
+                    }
                 }
             } else {
                 $sql = $conn->prepare("INSERT INTO products (date, title, sku, price, featured_image, gallery) VALUES (NOW(), ?, ?, ?, ?, ?)");
-
                 $sql->bind_param("sssss", $title, $sku, $price, $Filename, $images);
-
                 $sql->execute();
             }
-            if (!empty($title && $sku && $price)  === TRUE) {
+            if (!empty($title && $sku && $price) === TRUE) {
                 if (!isset($product_id)) {
                     $product_id = $conn->insert_id;
                 }
@@ -101,7 +109,6 @@ if (isset($_POST['add_product'])) {
                 $sql_clear = $conn->prepare("DELETE FROM product_property WHERE product_id = ?");
                 $sql_clear->bind_param("i", $product_id);
                 $sql_clear->execute();
-
 
                 foreach ($categories as $category_id) {
                     if (isValidPropertyId($category_id, 'category', $conn)) {
@@ -119,19 +126,23 @@ if (isset($_POST['add_product'])) {
                     }
                 }
 
-
-                echo "Product added successfully";
+                if ($name == 'Edit Product') {
+                    echo '<script>
+                    alert("Product updated successfully");
+                    window.location.href="index.php";
+                    </script>';
+                } else {
+                    echo "Product added successfully";
+                }
             } else {
                 echo "Error: " . $sql . "<br>" . $conn->error;
                 echo "No products added yet";
             }
         }
     } else {
-        $errorFile =  "Sorry, there was a problem uploading your file.";
+        $errorFile = 'Select Featured is required';
     }
 }
-
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -142,7 +153,6 @@ if (isset($_POST['add_product'])) {
     <title><?php echo $name; ?></title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.5.0/semantic.min.css" integrity="sha512-KXol4x3sVoO+8ZsWPFI/r5KBVB/ssCGB5tsv2nVOKwLg33wTFP3fmnXa47FdSVIshVTgsYk/1734xSk9aFIa4A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="style.css">
-
 </head>
 
 <body>
@@ -150,7 +160,14 @@ if (isset($_POST['add_product'])) {
     <form enctype="multipart/form-data" class="ui form" method="post">
         <div class="field">
             <label for="title">Product name</label>
-            <input value="<?php if (isset($_POST['title'])) echo $_POST['title']; ?>" type="text" placeholder="required" name="title">
+            <input value="<?php
+                            if ($name == 'Add Product') {
+                                echo '';
+                            } else {
+                                echo $title;
+                            }
+
+                            ?>" type="text" placeholder="required" name="title">
             <p><?php if (isset($status1)) {
                     echo "<h5 class='warning'>$status1</h5>";
                 } ?></p>
@@ -159,7 +176,12 @@ if (isset($_POST['add_product'])) {
             <label for="sku">SKU</label>
             <input value="<?php
                             global $check_sku;
-                            if (isset($_POST['sku'])) echo $_POST['sku']; ?>" placeholder="required" type="text" name="sku">
+                            if ($name == 'Add Product') {
+                                echo '';
+                            } else {
+                                echo $sku;
+                            }
+                            ?>" placeholder="required" type="text" name="sku">
             <p>
                 <?php if (isset($status2)) {
                     echo "<h5 class='warning'>$status2</h5>";
@@ -169,30 +191,50 @@ if (isset($_POST['add_product'])) {
                 }
                 ?>
             </p>
-
         </div>
         <div class="field">
             <label for="price">Price</label>
-            <input placeholder="required" value="<?php if (isset($_POST['price'])) echo $_POST['price']; ?>" step=".01" min="0" type="number" name="price">
+            <input onkeypress="return isNumberKey(event)" placeholder="required" value="<?php
+                 if ($name == 'Add Product') {
+                     echo '';
+                 } else {
+                     echo $price;
+                 }
+                 ?>" type="text" name="price">
             <p><?php if (isset($status3)) {
                     echo "<h5 class='warning'>$status3</h5>";
                 } ?></p>
-
         </div>
         <div class="field">
-            <label for="featured_image">Featured Image</label>
-            <input placeholder="required" accept=".jpeg, .jpg, .png, .gif" type="file" name="featured_image">
+            <label for="featured_image">Featured Image <span class="required">(Required)</span></label>
+            <?php if (isset($product_data['featured_image']) && !empty($product_data['featured_image'])) : ?>
+                <img src="uploads/<?php echo $product_data['featured_image']; ?>" alt="Featured Image" style="max-width: 200px;">
+            <?php endif; ?>
+            <input accept=".jpeg, .jpg, .png, .gif" type="file" name="featured_image">
             <p><?php if (isset($errorFile)) {
                     echo "<h5 class='warning'>$errorFile</h5>";
                 } ?></p>
         </div>
-
         <div class="field">
             <label for="gallery">Select Gallery</label>
-            <input accept="image/png, image/jpg, image/jpeg, image/gif" type="file" name="galleries[]" multiple>
-            <input type="hidden" name="galleries" id="selectedGalleries">
+            <div class="gallery-images">
+                <?php
+                // Display gallery images with edit capability
+                if (isset($product_data['gallery']) && !empty($product_data['gallery'])) {
+                    $gallery_images = explode(', ', $product_data['gallery']);
+                    foreach ($gallery_images as $image) {
+                        echo '<div class="gallery-image">';
+                        echo '<img src="uploads/' . $image . '" alt="' . $image . '" style="max-width: 150px;">';
+                        echo '</div>';
+                    }
+                }
+                ?>
+            </div>
+            <input accept="image/png, image/png, image/jpg, image/jpeg, image/gif" type="file" name="galleries[]" multiple>
+            <p><?php if (isset($errorGallery)) {
+                    echo "<h5 class='warning'>$errorGallery</h5>";
+                } ?></p>
         </div>
-
         <div class="field">
             <label for="categories">Categories</label>
             <?php
@@ -215,7 +257,6 @@ if (isset($_POST['add_product'])) {
             }
             ?>
         </div>
-
         <div class="field">
             <label for="tags">Tags</label>
             <?php
@@ -238,18 +279,12 @@ if (isset($_POST['add_product'])) {
             }
             ?>
         </div>
-
-
         <div class="footer_property">
             <a class="ui button" href="index.php">Back</a>
             <button id="img-upload" name="add_product" class="ui button" type="submit">Add</button>
-
         </div>
     </form>
-
-    <script src="script.js">
-
-    </script>
+<script src="script.js"></script>
 </body>
 
 </html>

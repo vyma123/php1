@@ -221,14 +221,23 @@ select {
     justify-content: space-around;
 }
 
-   .gallery-image {
-       display: inline-block;
-       margin: 5px;
-       cursor: pointer;
-       border: 2px solid transparent;
-   }
+.field img{
+    height: 80px;
+        object-fit: cover;
+}
+      
+.gallery-images{
+    display: flex;
+    gap: 2rem;
+}
 
-   .gallery-image.selected {
+.gallery-images .gallery-image img{
+    height:  80px;
+    object-fit: cover;
+
+}
+
+.gallery-image.selected {
        border: 2px solid blue;
    }
 
@@ -246,28 +255,9 @@ select {
     padding: 0;
    }
 
-       .gallery-image {
-            display: inline-block;
-            margin: 5px;
-            cursor: pointer;
-            border: 2px solid transparent;
-        }
-
-        .gallery-image.selected {
-            border: 2px solid blue;
-        }
 
         
- .gallery-image {
-     display: inline-block;
-     margin: 5px;
-     cursor: pointer;
-     border: 2px solid transparent;
- }
-        
- .gallery-image.selected {
-     border: 2px solid blue;
- }
+
         
  label {
      font-size: 1.2rem !important;
@@ -288,4 +278,9 @@ select {
 
  .images_gallery img{
     object-fit: cover;
+ }
+
+
+ .required{
+    color: #4544447a;
  }
