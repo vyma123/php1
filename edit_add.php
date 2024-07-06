@@ -49,7 +49,7 @@ if (isset($_GET['editid'])) {
 if (isset($_POST['add_product'])) {
 
     $title = test_input($_POST['title']);
-    $sku = test_input($_POST['sku']);
+    $sku = $_POST['sku'];
     $price = trim(test_input($_POST['price']));
 
     $title == false ? $status1 = 'Required title' : '';
@@ -70,12 +70,23 @@ if (isset($_POST['add_product'])) {
     if (move_uploaded_file($_FILES['featured_image']['tmp_name'], $target)) {
 
         if (isset($product_id)) {
-            // ignore the product's current SKU
-            $u = "SELECT sku FROM products WHERE sku = '$sku' AND id != $product_id";
+            $u = "SELECT sku FROM products WHERE sku = ? AND id != ?";
+            $stmt = $conn->prepare($u);
+            $stmt->bind_param("si", $sku, $product_id);
         } else {
-            $u = "SELECT sku FROM products WHERE sku = '$sku'";
+            $u = "SELECT sku FROM products WHERE sku = ?";
+            $stmt = $conn->prepare($u);
+            $stmt->bind_param("s", $sku);
         }
-        $uu = mysqli_query($conn, $u);
+        $stmt->execute();
+        $uu = $stmt->get_result();
+
+        
+        // try {
+        //   print_r($uu);
+        // } catch (\Throwable $th) {
+        //     //throw $th;
+        // }
 
 
         if (mysqli_num_rows($uu) > 0) {
