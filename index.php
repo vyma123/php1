@@ -76,7 +76,7 @@ $total_page = ceil($total_data / $data_per_page);
 $current_page = isset($_GET['page']) ? $_GET['page'] : 1;
 if (!is_numeric($current_page)) {
     header('Location: error.php');
-    exit; 
+    exit;
 }
 
 $current_page = intval($current_page);
@@ -317,7 +317,9 @@ $rs_result = $conn->query($query);
         </div>
     </div>
 
-    <script src="sc.js"></script>
+    <script src="script.js">
+       
+    </script>
 </body>
 
 </html>

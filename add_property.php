@@ -16,12 +16,15 @@ if (isset($_POST['add_property'])) {
         if (mysqli_num_rows($uu) > 0) {
             $result_cate = "<h5 class='warning'> This category already exists or duplicate with tag</h5>";
         } else {
+            $check_categories = preg_match('/^[A-Za-z0-9_-]*$/', $categories);
 
-            $sql = $conn->prepare("INSERT INTO property (type_, name_) VALUES (?, ?)");
-            $sql ->bind_param("ss",$cattype,$categories);
-            $sql->execute();
-
-            
+            if (!$check_categories) {
+                $categories_error = "don't allow special char";
+            } else  {
+                $categories = htmlspecialchars($categories);
+                $sql = $conn->prepare("INSERT INTO property (type_, name_) VALUES (?, ?)");
+                $sql ->bind_param("ss",$cattype,$categories);
+                $sql->execute();
             try {
                 if ($sql->affected_rows == 1) {
                     $result_cate = "New category created successfully";
@@ -33,6 +36,7 @@ if (isset($_POST['add_property'])) {
                     echo "Error: " . $sql . "<br>" . $conn->error;
                 }
             }
+        }
         }
     }
 
@@ -47,6 +51,10 @@ if (isset($_POST['add_property'])) {
         if (mysqli_num_rows($uu) > 0) {
             $result_tag = "<h5 class='warning'> This tag already exists or duplicate with category</h5>";
         } else {
+            $check_tags = preg_match('/^[A-Za-z0-9_-]*$/', $tag);
+            if (!$check_tags) {
+                $tag_error = "don't allow special char";
+            } else {
             $sql = $conn->prepare("INSERT INTO property (`type_`, `name_`) VALUES (?, ?)");
             $sql->bind_param("ss", $tagtype, $tag);
             $sql->execute();
@@ -62,6 +70,7 @@ if (isset($_POST['add_property'])) {
                     echo "Error: " . $sql . "<br>" . $conn->error;
                 }
             }
+        }
         }
     }
 
@@ -91,8 +100,10 @@ if (isset($_POST['add_property'])) {
             <label>Categories</label>
             <input type="text" name="categories" placeholder="Categories">
             <div><?php
-                    if (isset($categories) && $categories !== "") {
-                        echo $result_cate;
+                    if(isset($categories_error)) {
+                         echo $categories_error;
+                    }else if (isset($categories) && $categories !== "") {
+                           echo $result_cate;
                     }
                     ?></div>
         </div>
@@ -100,7 +111,9 @@ if (isset($_POST['add_property'])) {
             <label>Tags</label>
             <input type="text" name="tag" placeholder="Tag">
             <div><?php
-                    if (isset($tag) && $tag !== "") {
+                    if (isset($tag_error)) {
+                        echo $tag_error;
+                    } else if (isset($tag) && $tag !== "") {
                         echo $result_tag;
                     }
                     ?></div>

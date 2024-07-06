@@ -69,13 +69,18 @@ if (isset($_POST['add_product'])) {
 
     if (move_uploaded_file($_FILES['featured_image']['tmp_name'], $target)) {
 
-        $u = "SELECT sku from products where sku = '$sku'";
+        if (isset($product_id)) {
+            // ignore the product's current SKU
+            $u = "SELECT sku FROM products WHERE sku = '$sku' AND id != $product_id";
+        } else {
+            $u = "SELECT sku FROM products WHERE sku = '$sku'";
+        }
         $uu = mysqli_query($conn, $u);
 
 
-        if (mysqli_num_rows($uu) > 0 && !isset($product_id)) {
-            $check_sku = "<h5 class='warning'>this sku already exists</h5>";
-        } else {
+        if (mysqli_num_rows($uu) > 0) {
+            echo  "<h5 class='warning'>this sku already exists</h5>";
+        }else {
 
             for ($i = 0; $i < count($_FILES['galleries']['name']); $i++) {
                 $galleryName[] = basename($_FILES['galleries']['name'][$i]);
@@ -84,6 +89,10 @@ if (isset($_POST['add_product'])) {
                 move_uploaded_file($uploadFile, $targetpath);
             };
             $images = implode(', ', $_FILES['galleries']['name']);
+            $price = filter_input(INPUT_POST, 'price', FILTER_VALIDATE_FLOAT);
+            $check_title = preg_match('/^[A-Za-z0-9 _\-–]*$/', $title);
+            $check_sku = preg_match('/^[A-Za-z0-9_-]*$/', $sku);
+
             if (isset($product_id)) {
                 if (is_numeric($_GET['editid'])) {
                     if (!$gallery_selected) {
@@ -97,11 +106,22 @@ if (isset($_POST['add_product'])) {
                     }
                 }
             } else {
-                $sql = $conn->prepare("INSERT INTO products (date, title, sku, price, featured_image, gallery) VALUES (NOW(), ?, ?, ?, ?, ?)");
-                $sql->bind_param("sssss", $title, $sku, $price, $Filename, $images);
-                $sql->execute();
+                if (!$price) {
+                    $price_error = 'just number';
+                } else if (!$check_title) {
+                    $title_error = "don't allow special char";
+                } else if (!$check_sku) {
+                    $sku_error = "don't allow special char";
+                } else {
+                    $sku = htmlspecialchars($sku);
+                    $title = htmlspecialchars($title);
+
+                    $sql = $conn->prepare("INSERT INTO products (date, title, sku, price, featured_image, gallery) VALUES (NOW(), ?, ?, ?, ?, ?)");
+                    $sql->bind_param("sssss", $title, $sku, $price, $Filename, $images);
+                    $sql->execute();
+                }
             }
-            if (!empty($title && $sku && $price) === TRUE) {
+            if (!empty($title && $sku && $price) === TRUE && $check_title && $check_sku) {
                 if (!isset($product_id)) {
                     $product_id = $conn->insert_id;
                 }
@@ -135,14 +155,29 @@ if (isset($_POST['add_product'])) {
                     echo "Product added successfully";
                 }
             } else {
-                echo "Error: " . $sql . "<br>" . $conn->error;
-                echo "No products added yet";
+                if ($name == 'Edit Product') {
+                    echo "No Product update yet";
+                    if (!$price) {
+                        $price_error = 'just number';
+                    } else if (!$check_title) {
+                        $title_error = "don't allow special char";
+                    } else if (!$check_sku) {
+                        $sku_error = "don't allow special char";
+                    }
+                } else {
+                    echo "No Product added yet";
+                }
             }
         }
     } else {
         $errorFile = 'Select Featured is required';
     }
 }
+
+
+$selected_categories = isset($_POST['categories']) ? $_POST['categories'] : [];
+$selected_tags = isset($_POST['tags']) ? $_POST['tags'] : [];
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -161,7 +196,7 @@ if (isset($_POST['add_product'])) {
         <div class="field">
             <label for="title">Product name</label>
             <input value="<?php
-                            if ($name == 'Add Product') {
+                            if ($name == 'Add Product' && !isset($_POST['title'])) {
                                 echo '';
                             } else {
                                 echo $title;
@@ -170,13 +205,15 @@ if (isset($_POST['add_product'])) {
                             ?>" type="text" placeholder="required" name="title">
             <p><?php if (isset($status1)) {
                     echo "<h5 class='warning'>$status1</h5>";
-                } ?></p>
+                } else if (isset($title_error)) {
+                    echo "<h5 class='warning'>$title_error</h5>";
+                }
+                ?></p>
         </div>
         <div class="field">
             <label for="sku">SKU</label>
             <input value="<?php
-                            global $check_sku;
-                            if ($name == 'Add Product') {
+                            if ($name == 'Add Product' && !isset($_POST['sku'])) {
                                 echo '';
                             } else {
                                 echo $sku;
@@ -185,9 +222,8 @@ if (isset($_POST['add_product'])) {
             <p>
                 <?php if (isset($status2)) {
                     echo "<h5 class='warning'>$status2</h5>";
-                } else {
-                    global $check_sku;
-                    echo $check_sku;
+                } else if (isset($sku_error)) {
+                    echo "<h5 class='warning'>$sku_error</h5>";
                 }
                 ?>
             </p>
@@ -195,15 +231,18 @@ if (isset($_POST['add_product'])) {
         <div class="field">
             <label for="price">Price</label>
             <input onkeypress="return isNumberKey(event)" placeholder="required" value="<?php
-                 if ($name == 'Add Product') {
-                     echo '';
-                 } else {
-                     echo $price;
-                 }
-                 ?>" type="text" name="price">
+                                                                                        if ($name == 'Add Product' && !isset($_POST['price'])) {
+                                                                                            echo '';
+                                                                                        } else {
+                                                                                            echo $price;
+                                                                                        }
+                                                                                        ?>" type="text" name="price">
             <p><?php if (isset($status3)) {
                     echo "<h5 class='warning'>$status3</h5>";
-                } ?></p>
+                } else if (isset($price_error)) {
+                    echo "<h5 class='warning'>$price_error</h5>";
+                }
+                ?></p>
         </div>
         <div class="field">
             <label for="featured_image">Featured Image <span class="required">(Required)</span></label>
@@ -244,9 +283,9 @@ if (isset($_POST['add_product'])) {
             if ($result->num_rows > 0) {
                 echo '<select name="categories[]" multiple>';
                 while ($data = mysqli_fetch_array($result)) {
-                    // Check if editing and category is selected for the product
+                    // Kiểm tra nếu đang trong chế độ chỉnh sửa và category đã được chọn cho sản phẩm
                     $selected = '';
-                    if ($name == "Edit Product" && in_array($data['id'], $product_properties)) {
+                    if (($name == "Edit Product" && in_array($data['id'], $product_properties)) || in_array($data['id'], $selected_categories)) {
                         $selected = 'selected';
                     }
                     echo '<option value="' . $data['id'] . '" ' . $selected . '>' . $data['name_'] . '</option>';
@@ -257,6 +296,7 @@ if (isset($_POST['add_product'])) {
             }
             ?>
         </div>
+
         <div class="field">
             <label for="tags">Tags</label>
             <?php
@@ -266,9 +306,9 @@ if (isset($_POST['add_product'])) {
             if ($result->num_rows > 0) {
                 echo '<select name="tags[]" multiple>';
                 while ($data = mysqli_fetch_array($result)) {
-                    // Check if editing and tag is selected for the product
+                    // Kiểm tra nếu đang trong chế độ chỉnh sửa và tag đã được chọn cho sản phẩm
                     $selected = '';
-                    if ($name == "Edit Product" && in_array($data['id'], $product_properties)) {
+                    if (($name == "Edit Product" && in_array($data['id'], $product_properties)) || in_array($data['id'], $selected_tags)) {
                         $selected = 'selected';
                     }
                     echo '<option value="' . $data['id'] . '" ' . $selected . '>' . $data['name_'] . '</option>';
@@ -279,12 +319,14 @@ if (isset($_POST['add_product'])) {
             }
             ?>
         </div>
+
         <div class="footer_property">
             <a class="ui button" href="index.php">Back</a>
             <button id="img-upload" name="add_product" class="ui button" type="submit">Add</button>
         </div>
     </form>
-<script src="script.js"></script>
+    <script src="script.js">
+    </script>
 </body>
 
 </html>

@@ -103,3 +103,5 @@ function validateAndRedirectIfNotNumeric($conn, &$param, $default = '')
         $param = $default;
     }
 }
+
+
