@@ -46,6 +46,7 @@ if (isset($_GET['editid'])) {
     $name = "Add Product";
 }
 
+
 if (isset($_POST['add_product'])) {
 
     $title = test_input($_POST['title']);
@@ -81,7 +82,6 @@ if (isset($_POST['add_product'])) {
         $stmt->execute();
         $uu = $stmt->get_result();
 
-        
         // try {
         //   print_r($uu);
         // } catch (\Throwable $th) {
@@ -91,7 +91,7 @@ if (isset($_POST['add_product'])) {
 
         if (mysqli_num_rows($uu) > 0) {
             echo  "<h5 class='warning'>this sku already exists</h5>";
-        }else {
+        } else {
 
             for ($i = 0; $i < count($_FILES['galleries']['name']); $i++) {
                 $galleryName[] = basename($_FILES['galleries']['name'][$i]);
@@ -117,11 +117,24 @@ if (isset($_POST['add_product'])) {
                     }
                 }
             } else {
-                if (!$price) {
+                if (!$price && !$check_title && !$check_sku) {
+                    $price_error = 'just number';
+                    $title_error = "don't allow special char";
+                    $sku_error = "don't allow special char";
+                } else if (!$check_title && !$check_sku) {
+                    $title_error = "don't allow special char";
+                    $sku_error = "don't allow special char";
+                } else if (!$check_title && !$price) {
+                    $title_error = "don't allow special char";
+                    $price_error = 'just number';
+                } else if (!$check_sku && !$price) {
+                    $sku_error = "don't allow special char";
                     $price_error = 'just number';
                 } else if (!$check_title) {
                     $title_error = "don't allow special char";
                 } else if (!$check_sku) {
+                    $sku_error = "don't allow special char";
+                } else if (!$price) {
                     $sku_error = "don't allow special char";
                 } else {
                     $sku = htmlspecialchars($sku);
@@ -242,12 +255,12 @@ $selected_tags = isset($_POST['tags']) ? $_POST['tags'] : [];
         <div class="field">
             <label for="price">Price</label>
             <input onkeypress="return isNumberKey(event)" placeholder="required" value="<?php
-                                                                                        if ($name == 'Add Product' && !isset($_POST['price'])) {
-                                                                                            echo '';
-                                                                                        } else {
-                                                                                            echo $price;
-                                                                                        }
-                                                                                        ?>" type="text" name="price">
+              if ($name == 'Add Product' && !isset($_POST['price'])) {
+                 echo '';
+               } else {
+               echo $price;
+                }
+            ?>" type="text" name="price">
             <p><?php if (isset($status3)) {
                     echo "<h5 class='warning'>$status3</h5>";
                 } else if (isset($price_error)) {
@@ -260,7 +273,7 @@ $selected_tags = isset($_POST['tags']) ? $_POST['tags'] : [];
             <?php if (isset($product_data['featured_image']) && !empty($product_data['featured_image'])) : ?>
                 <img src="uploads/<?php echo $product_data['featured_image']; ?>" alt="Featured Image" style="max-width: 200px;">
             <?php endif; ?>
-            <input accept=".jpeg, .jpg, .png, .gif" type="file" name="featured_image">
+            <input id="myFile" accept=".jpeg, .jpg, .png, .gif" type="file" name="featured_image">
             <p><?php if (isset($errorFile)) {
                     echo "<h5 class='warning'>$errorFile</h5>";
                 } ?></p>
@@ -337,6 +350,7 @@ $selected_tags = isset($_POST['tags']) ? $_POST['tags'] : [];
         </div>
     </form>
     <script src="script.js">
+
     </script>
 </body>
 
